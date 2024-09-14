@@ -21,7 +21,7 @@ if (process.env.NODE_ENV === "production") {
 	// });
 	var pool = mysql.createPool({
 		connectionLimit: 10,
-		host: "66.29.148.84",
+		host: "localhost",
 		user: "ivkqkoujku_vet",
 		password: "5~q^ukf0iIU4",
 		database: "ivkqkoujku_vet",
