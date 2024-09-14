@@ -26,6 +26,14 @@ exports.login = async (req, res, next) => {
 				first_name: result.first_name,
 				user_type: result.user_type,
 				token: token,
+				permissions: {
+					edit_pets: result.edit_pets,
+					show_stock: result.show_stock,
+					show_cost: result.show_cost,
+					edit_invoice: result.edit_invoice,
+					delete_invoice: result.delete_invoice,
+					show_reports: result.show_reports
+				}
 			};
 			if (user.user_type !== "admin") {
 				io.emit("userLoggedIn", username);

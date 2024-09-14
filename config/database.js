@@ -58,21 +58,12 @@ if (process.env.NODE_ENV === "production") {
 		});
 	});
 } else {
-	// var pool = mysql.createPool({
-	// 	connectionLimit: 10,
-	// 	host: "localhost",
-	// 	user: "root",
-	// 	password: "roottoor",
-	// 	database: "vet",
-	// 	multipleStatements: true,
-	// 	dateStrings: true,
-	// });
 	var pool = mysql.createPool({
 		connectionLimit: 10,
 		host: "localhost",
-		user: "ivkqkoujku_vet",
-		password: "5~q^ukf0iIU4",
-		database: "ivkqkoujku_vet",
+		user: "root",
+		password: "roottoor",
+		database: "vet",
 		multipleStatements: true,
 		dateStrings: true,
 	});
