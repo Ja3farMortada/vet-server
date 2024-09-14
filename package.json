@@ -4,7 +4,8 @@
   "description": "express server for karizma app",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon development.js"
+    "start": "nodemon development.js",
+    "fix": "npm i"
   },
   "author": "",
   "license": "ISC",
