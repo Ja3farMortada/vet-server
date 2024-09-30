@@ -88,7 +88,6 @@ class SellOrders {
 
 			// console.log(order);
 			delete order.send_whatsapp;
-			console.log(order);
 			
 			const [result] = await connection.query(
 				`INSERT INTO sales_orders SET ?`,
