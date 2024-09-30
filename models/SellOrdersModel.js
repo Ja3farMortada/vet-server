@@ -86,6 +86,10 @@ class SellOrders {
 				}
 			}
 
+			// console.log(order);
+			delete order.send_whatsapp;
+			console.log(order);
+			
 			const [result] = await connection.query(
 				`INSERT INTO sales_orders SET ?`,
 				order
@@ -139,6 +143,8 @@ class SellOrders {
 				let quantity = null;
 				let params = [];
 				items.forEach((element) => {
+					console.log(element);
+					
 					if (element.stock_management == 1) {
 						product_id = element["product_id"];
 						quantity = element["quantity"];
@@ -152,7 +158,9 @@ class SellOrders {
 						queries += `INSERT INTO inventory_transactions (product_id_fk, quantity, transaction_type, order_id_fk, transaction_notes) VALUES (?, -?, 'SALE', ?, ?);`;
 					}
 				});
-				await connection.query(queries, params);
+				if(queries) {
+					await connection.query(queries, params);
+				}
 			}
 
 			await connection.commit();
