@@ -53,7 +53,7 @@ if (process.env.NODE_ENV === "production") {
 		connectionLimit: 10,
 		host: "localhost",
 		user: "root",
-		password: "roottoor",
+		password: "5~q^ukf0iIU4",
 		database: "vet",
 		multipleStatements: true,
 		dateStrings: true,
