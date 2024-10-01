@@ -56,7 +56,7 @@ app.use("/expense", auth, ExpenseRoutes);
 app.use("/report", auth, ReportRoutes);
 app.use("/return", auth, ReturnRoutes);
 app.use("/suppliers", auth, SuppliersRoutes);
-app.use("/stock", auth, StockRoutes);
+app.use("/stock", StockRoutes);
 app.use("/reservations", auth, ReservationsRoutes);
 app.use("/pets", auth, PetsRoutes);
 
