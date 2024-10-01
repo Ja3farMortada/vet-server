@@ -12,7 +12,7 @@ const ensureLogDirectoryExists = (directory) => {
 if (process.env.NODE_ENV === "production") {
 	var pool = mysql.createPool({
 		connectionLimit: 10,
-		host: "localhost",
+		host: "127.0.0.1",
 		user: "root",
 		password: "5~q^ukf0iIU4",
 		database: "vet",
@@ -51,7 +51,7 @@ if (process.env.NODE_ENV === "production") {
 } else {
 	var pool = mysql.createPool({
 		connectionLimit: 10,
-		host: "localhost",
+		host: "127.0.0.1",
 		user: "root",
 		password: "5~q^ukf0iIU4",
 		database: "vet",
