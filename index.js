@@ -71,8 +71,5 @@ app.get("/", (req, res) => {
 // handle errors
 app.use(errorHandler);
 
-if (process.env.NODE_ENV === "production") {
-	server.listen(3500, () => console.log(`listening on port 3500 ...`));
-}
 
 module.exports = server;
