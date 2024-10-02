@@ -52,8 +52,8 @@ if (process.env.NODE_ENV === "production") {
 	var pool = mysql.createPool({
 		connectionLimit: 10,
 		host: "localhost",
-		user: "root",
-		password: "roottoor",
+		user: "vet",
+		password: "5~q^ukf0iIU4",
 		database: "vet",
 		multipleStatements: true,
 		dateStrings: true,
