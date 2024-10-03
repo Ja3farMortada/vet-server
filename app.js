@@ -4,8 +4,8 @@ const https = require("https");
 const server = require("./index");
 
 const options = {
-  key: fs.readFileSync("/etc/letsencrypt/live/your_domain.com/privkey.pem"),
-  cert: fs.readFileSync("/etc/letsencrypt/live/your_domain.com/fullchain.pem"),
+  key: fs.readFileSync("/etc/letsencrypt/live/vet101.online/privkey.pem"),
+  cert: fs.readFileSync("/etc/letsencrypt/live/vet101.online/fullchain.pem"),
 };
 // server.listen(3500, () => console.log(`listening on port 3500 ...`));
 // const PORT = 443; // HTTPS port
