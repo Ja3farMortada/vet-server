@@ -9,6 +9,6 @@ const options = {
 };
 // server.listen(3500, () => console.log(`listening on port 3500 ...`));
 // const PORT = 443; // HTTPS port
-https.createServer(options, 3500).listen(PORT, () => {
+https.createServer(options, server).listen(3500, () => {
     console.log(`Server running at https://vet101.online`);
 });
