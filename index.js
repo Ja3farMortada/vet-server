@@ -9,6 +9,13 @@ app.use(cors());
 
 const fs = require("fs");
 
+const http = require('http')
+// Redirect HTTP to HTTPS
+http.createServer((req, res) => {
+    res.writeHead(301, { "Location": `https://${req.headers.host}${req.url}` });
+    res.end();
+}).listen(80);
+
 const options = {
 	key: fs.readFileSync("/etc/letsencrypt/live/vet101.online/privkey.pem"),
 	cert: fs.readFileSync("/etc/letsencrypt/live/vet101.online/fullchain.pem"),
