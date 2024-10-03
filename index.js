@@ -7,10 +7,16 @@ app.use(express.json());
 const cors = require("cors");
 app.use(cors());
 
+const fs = require("fs");
+
+const options = {
+	key: fs.readFileSync("/etc/letsencrypt/live/vet101.online/privkey.pem"),
+	cert: fs.readFileSync("/etc/letsencrypt/live/vet101.online/fullchain.pem"),
+  };
 // create server for socket.io
-const http = require("http");
+const https = require("https");
 const socketIO = require("socket.io");
-const server = http.createServer(app); // Create server from Express app
+const server = https.createServer(options, app); // Create server from Express app
 const io = socketIO(server, {
 	cors: {
 		origins: ["*"],
