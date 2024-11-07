@@ -2,118 +2,124 @@ const pool = require("../config/database");
 const Customer = require("../models/CustomersModel");
 
 class Reservation {
-	// get all reservations
-	static async getAll() {
-		let query = `SELECT R.*, A.name AS title, A.phone FROM reservations R INNER JOIN accounts A ON R.customer_id_fk = A.account_id WHERE R.is_deleted = 0`;
-		const [result] = await pool.query(query);
-		return result;
-	}
+  // get all reservations
+  static async getAll() {
+    let query = `SELECT R.*, A.name AS title, A.phone FROM reservations R LEFT JOIN accounts A ON R.customer_id_fk = A.account_id WHERE R.is_deleted = 0`;
+    const [result] = await pool.query(query);
+    console.log(result);
 
-	// get by id
-	static async getById(id) {
-		let query = `SELECT R.*, A.name AS title, A.phone FROM reservations R INNER JOIN accounts A ON R.customer_id_fk = A.account_id WHERE R.is_deleted = 0 AND id = ?`;
-		const [result] = await pool.query(query, [id]);
-		return result;
-	}
+    return result;
+  }
 
-	// create
-	static async create(data) {
-		const connection = await pool.getConnection();
-		try {
-			await connection.beginTransaction();
-			let reservationData = {
-				start: data.start,
-				end: data.end,
-				backgroundColor: data.backgroundColor,
-				borderColor: data.backgroundColor,
-				notes: data.notes,
-			};
+  // get by id
+  static async getById(id) {
+    let query = `SELECT R.*, A.name AS title, A.phone FROM reservations R LEFT JOIN accounts A ON R.customer_id_fk = A.account_id WHERE R.is_deleted = 0 AND id = ?`;
+    const [result] = await pool.query(query, [id]);
+    return result;
+  }
 
-			if (data.customer_option === "create_new") {
-				// customer object
-				let customerData = {
-					name: data.title,
-					phone: data.phone,
-					address: data.address,
-				};
-				// create customer model
-				const createdCustomer = await Customer.createCustomer(
-					customerData,
-					connection
-				);
+  // create
+  static async create(data) {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      let reservationData = {
+        start: data.start,
+        end: data.end,
+        backgroundColor: data.backgroundColor,
+        borderColor: data.backgroundColor,
+        notes: data.notes,
+      };
 
-				reservationData.customer_id_fk = createdCustomer.insertId;
-			} else {
-				reservationData.customer_id_fk = data.customer_id_fk;
-			}
+      if (data.customer_option === "create_new") {
+        // customer object
+        let customerData = {
+          name: data.title,
+          phone: data.phone,
+          address: data.address,
+        };
+        // create customer model
+        const createdCustomer = await Customer.createCustomer(
+          customerData,
+          connection
+        );
 
-			let query = `INSERT INTO reservations SET ?`;
-			const [rows] = await pool.query(query, reservationData);
+        reservationData.customer_id_fk = createdCustomer.insertId;
+      } else {
+        console.log("called");
 
-			await connection.commit();
-			return rows;
-		} catch (error) {
-			await connection.rollback();
-			throw error;
-		} finally {
-			connection.release();
-		}
-	}
+        if (data.customer_id_fk) {
+          console.log("callled 2");
 
-	// update
-	static async update(data) {
-		const connection = await pool.getConnection();
-		try {
-			await connection.beginTransaction();
-			let reservationData = {
-				start: data.start,
-				end: data.end,
-				backgroundColor: data.backgroundColor,
-				borderColor: data.backgroundColor,
-				notes: data.notes,
-			};
+          reservationData.customer_id_fk = data.customer_id_fk;
+        }
+      }
 
-			if (data.customer_option === "create_new") {
-				// customer object
-				let customerData = {
-					name: data.title,
-					phone: data.phone,
-					address: data.address,
-				};
-				// create customer model
-				const createdCustomer = await Customer.createCustomer(
-					customerData,
-					connection
-				);
+      let query = `INSERT INTO reservations SET ?`;
+      const [rows] = await pool.query(query, reservationData);
+      console.log(rows);
 
-				reservationData.customer_id_fk = createdCustomer.insertId;
-			} else {
-				reservationData.customer_id_fk = data.customer_id_fk;
-			}
+      await connection.commit();
+      return rows;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
 
-			let query = `UPDATE reservations SET ? WHERE id = ?`;
-			const [rows] = await pool.query(query, [reservationData, data.id]);
+  // update
+  static async update(data) {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      let reservationData = {
+        start: data.start,
+        end: data.end,
+        backgroundColor: data.backgroundColor,
+        borderColor: data.backgroundColor,
+        notes: data.notes,
+      };
 
-			await connection.commit();
-			return rows;
-		} catch (error) {
-			await connection.rollback();
-			throw error;
-		} finally {
-			connection.release();
-		}
-		// data.borderColor = data.backgroundColor;
-		// let query = `UPDATE reservations SET ? WHERE id = ?`;
-		// await pool.query(query, [data, data.id]);
-	}
+      if (data.customer_option === "create_new") {
+        // customer object
+        let customerData = {
+          name: data.title,
+          phone: data.phone,
+          address: data.address,
+        };
+        // create customer model
+        const createdCustomer = await Customer.createCustomer(
+          customerData,
+          connection
+        );
 
-	// delete
-	static async delete(id) {
-		await pool.query(
-			`UPDATE reservations SET is_deleted = 1 WHERE id = ?`,
-			id
-		);
-	}
+        reservationData.customer_id_fk = createdCustomer.insertId;
+      } else {
+        reservationData.customer_id_fk = data.customer_id_fk;
+      }
+
+      let query = `UPDATE reservations SET ? WHERE id = ?`;
+      const [rows] = await pool.query(query, [reservationData, data.id]);
+
+      await connection.commit();
+      return rows;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+    // data.borderColor = data.backgroundColor;
+    // let query = `UPDATE reservations SET ? WHERE id = ?`;
+    // await pool.query(query, [data, data.id]);
+  }
+
+  // delete
+  static async delete(id) {
+    await pool.query(`UPDATE reservations SET is_deleted = 1 WHERE id = ?`, id);
+  }
 }
 
 module.exports = Reservation;

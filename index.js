@@ -9,25 +9,36 @@ app.use(cors());
 
 const fs = require("fs");
 
-const http = require('http')
+const http = require("http");
 // Redirect HTTP to HTTPS
-http.createServer((req, res) => {
-    res.writeHead(301, { "Location": `https://${req.headers.host}${req.url}` });
-    res.end();
-}).listen(80);
 
-const options = {
-	key: fs.readFileSync("/etc/letsencrypt/live/vet101.online/privkey.pem"),
-	cert: fs.readFileSync("/etc/letsencrypt/live/vet101.online/fullchain.pem"),
+let options;
+if (process.env.NODE_ENV === "production") {
+  http
+    .createServer((req, res) => {
+      res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
+      res.end();
+    })
+    .listen(80);
+
+  options = {
+    key: fs.readFileSync("/etc/letsencrypt/live/vet101.online/privkey.pem"),
+    cert: fs.readFileSync("/etc/letsencrypt/live/vet101.online/fullchain.pem"),
   };
+}
 // create server for socket.io
 const https = require("https");
 const socketIO = require("socket.io");
-const server = https.createServer(options, app); // Create server from Express app
+let server;
+if (process.env.NODE_ENV === "production") {
+  server = https.createServer(options, app); // Create server from Express app
+} else {
+  server = http.createServer(app);
+}
 const io = socketIO(server, {
-	cors: {
-		origins: ["*"],
-	},
+  cors: {
+    origins: ["*"],
+  },
 });
 
 const path = require("path");
@@ -53,8 +64,8 @@ const ReservationsRoutes = require("./routes/reservations.routes");
 const PetsRoutes = require("./routes/pets.routes");
 
 app.use((req, res, next) => {
-	req.io = io;
-	next();
+  req.io = io;
+  next();
 });
 
 // common routes
@@ -78,11 +89,10 @@ app.use("/users", admin, UsersRoutes);
 
 // check API status page
 app.get("/", (req, res) => {
-	res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // handle errors
 app.use(errorHandler);
-
 
 module.exports = server;
