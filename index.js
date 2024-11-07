@@ -14,18 +14,18 @@ const http = require("http");
 
 let options;
 if (process.env.NODE_ENV === "production") {
-  http
-    .createServer((req, res) => {
-      res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
-      res.end();
-    })
-    .listen(80);
-
-  options = {
-    key: fs.readFileSync("/etc/letsencrypt/live/vet101.online/privkey.pem"),
-    cert: fs.readFileSync("/etc/letsencrypt/live/vet101.online/fullchain.pem"),
-  };
 }
+http
+  .createServer((req, res) => {
+    res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
+    res.end();
+  })
+  .listen(80);
+
+options = {
+  key: fs.readFileSync("/etc/letsencrypt/live/vet101.online/privkey.pem"),
+  cert: fs.readFileSync("/etc/letsencrypt/live/vet101.online/fullchain.pem"),
+};
 // create server for socket.io
 const https = require("https");
 const socketIO = require("socket.io");
