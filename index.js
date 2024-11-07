@@ -30,11 +30,12 @@ options = {
 const https = require("https");
 const socketIO = require("socket.io");
 let server;
-if (process.env.NODE_ENV === "production") {
-  server = https.createServer(options, app); // Create server from Express app
-} else {
-  server = http.createServer(app);
-}
+server = https.createServer(options, app); // Create server from Express app
+// if (process.env.NODE_ENV === "production") {
+//   server = https.createServer(options, app); // Create server from Express app
+// } else {
+//   server = http.createServer(app);
+// }
 const io = socketIO(server, {
   cors: {
     origins: ["*"],
