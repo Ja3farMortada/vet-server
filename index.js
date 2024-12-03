@@ -13,6 +13,16 @@ const { auth, admin } = require("./middleware/auth");
 const errorHandler = require("./middleware/errorHandler");
 
 // socket init
+const socketIO = require("socket.io");
+const io = socketIO(server, {
+  cors: {
+    origins: ["*"],
+  },
+});
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 //import routes
 const AuthRoutes = require("./routes/auth.routes");

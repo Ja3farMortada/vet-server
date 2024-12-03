@@ -3,6 +3,7 @@ const express = require("express");
 const app = express();
 app.use(express.json());
 const path = require("path");
+const http = require("http");
 
 // allow Cross-Origin calls to this app
 const cors = require("cors");
@@ -12,6 +13,17 @@ const { auth, admin } = require("./middleware/auth");
 const errorHandler = require("./middleware/errorHandler");
 
 // socket init
+const server = http.createServer(app);
+const socketIO = require("socket.io");
+const io = socketIO(server, {
+  cors: {
+    origins: ["*"],
+  },
+});
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 //import routes
 const AuthRoutes = require("./routes/auth.routes");
@@ -57,9 +69,4 @@ app.get("/", (req, res) => {
 // handle errors
 app.use(errorHandler);
 
-module.exports = app;
-
-const http = require("http");
-
-const server = http.createServer(app);
 server.listen(3500, () => console.log(`listening on port 3500 ...`));
