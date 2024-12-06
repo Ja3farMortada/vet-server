@@ -1,8 +1,8 @@
 const pool = require("../config/database");
 
 class ReportModel {
-    static async getTotalSales(startDate, endDate) {
-        let query = ` WITH sales_summary AS (
+	static async getRevenue(startDate, endDate) {
+		let query = ` WITH sales_summary AS (
             SELECT
                 COALESCE(SUM(total_amount), 0) AS totalSale,
                 COALESCE(SUM(total_cost), 0) AS totalCost,
@@ -35,18 +35,40 @@ class ReportModel {
         FROM
             sales_summary sales
             CROSS JOIN return_summary returns;`;
-        let [[result]] = await pool.query(query, [
-            startDate,
-            endDate,
+		let [[result]] = await pool.query(query, [
+			startDate,
+			endDate,
 
-            startDate,
-            endDate,
-        ]);
-        return result;
-    }
+			startDate,
+			endDate,
+		]);
+		return result;
+	}
 
-    static async getTotalPayments(startDate, endDate) {
-        let query = `
+	// get top sales
+	static async getTopSales(startDate, endDate, id) {
+		let query = `SELECT p.product_name AS item_name,
+                SUM(soi.quantity) AS count FROM sales_order_items soi
+                INNER JOIN products p  ON soi.product_id  = p.product_id
+                WHERE soi.order_id IN
+
+                (SELECT so.order_id FROM sales_orders so
+                    WHERE DATE(so.order_datetime) >= ?
+                    AND DATE(so.order_datetime) <= ?
+                    AND so.is_deleted = 0)`;
+
+		if (id != "null") {
+			query += ` AND p.product_id = ? `;
+		}
+		query += `GROUP BY p.product_id
+                ORDER BY count DESC
+                LIMIT 10 `;
+		let [results] = await pool.query(query, [startDate, endDate, id]);
+		return results;
+	}
+
+	static async getTotalPayments(startDate, endDate) {
+		let query = `
         SELECT
         COALESCE(sum(total_value), 0) as totalPayment
         FROM journal_vouchers P
@@ -54,9 +76,9 @@ class ReportModel {
         AND DATE(P.journal_date) BETWEEN ? AND ?
 
         AND journal_description = 'Payment';`;
-        let [[result]] = await pool.query(query, [startDate, endDate]);
-        return result;
-    }
+		let [[result]] = await pool.query(query, [startDate, endDate]);
+		return result;
+	}
 }
 
 module.exports = ReportModel;
