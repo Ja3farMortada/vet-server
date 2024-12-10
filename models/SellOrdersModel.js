@@ -86,9 +86,8 @@ class SellOrders {
 				}
 			}
 
-			// console.log(order);
 			delete order.send_whatsapp;
-			
+
 			const [result] = await connection.query(
 				`INSERT INTO sales_orders SET ?`,
 				order
@@ -142,8 +141,6 @@ class SellOrders {
 				let quantity = null;
 				let params = [];
 				items.forEach((element) => {
-					console.log(element);
-					
 					if (element.stock_management == 1) {
 						product_id = element["product_id"];
 						quantity = element["quantity"];
@@ -157,7 +154,7 @@ class SellOrders {
 						queries += `INSERT INTO inventory_transactions (product_id_fk, quantity, transaction_type, order_id_fk, transaction_notes) VALUES (?, -?, 'SALE', ?, ?);`;
 					}
 				});
-				if(queries) {
+				if (queries) {
 					await connection.query(queries, params);
 				}
 			}
@@ -207,7 +204,7 @@ class SellOrders {
 			});
 			await connection.query(inventoryQueries);
 
-			if (orderCheck.customer_id) {
+			if (orderCheck.customer_id && orderCheck.journal_voucher_id) {
 				//delete voucher and items
 				let deleteVoucherQuery = `DELETE FROM journal_vouchers WHERE journal_id = ?`;
 				await connection.query(

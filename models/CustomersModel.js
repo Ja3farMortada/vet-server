@@ -54,6 +54,32 @@ class Customer {
 		return result;
 	}
 
+	// get customers debts
+
+	static async getCustomerDebts() {
+		let query = `SELECT
+					a.account_id,
+					a.name,
+					a.phone,
+					COALESCE(SUM(ji.debit) - SUM(ji.credit), 0) AS balance
+				FROM
+					journal_vouchers jv
+				
+				LEFT JOIN journal_items ji ON jv.journal_id = ji.journal_id_fk
+					
+				INNER JOIN accounts a ON ji.partner_id_fk = a.account_id
+					
+				WHERE
+					ji.is_deleted = 0 
+				GROUP BY ji.partner_id_fk
+
+				HAVING balance != 0
+				ORDER BY balance DESC`;
+		const [result] = await pool.query(query);
+
+		return result;
+	}
+
 	//////////////////////////////////
 	//customer model related to user//
 	//////////////////////////////////

@@ -2,10 +2,10 @@
   "name": "server",
   "version": "1.0.0",
   "description": "express server for karizma app",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "start": "nodemon development.js",
-    "release": "node index.js",
+    "release": "node app.js",
     "fix": "npm i"
   },
   "author": "",

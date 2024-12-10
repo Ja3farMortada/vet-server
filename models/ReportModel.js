@@ -47,9 +47,10 @@ class ReportModel {
 
 	// get top sales
 	static async getTopSales(startDate, endDate, id) {
-		let query = `SELECT p.product_name AS item_name,
+		let query = `SELECT p.product_id, p.product_name AS item_name, c.category_name,
                 SUM(soi.quantity) AS count FROM sales_order_items soi
                 INNER JOIN products p  ON soi.product_id  = p.product_id
+				INNER JOIN products_categories c ON p.category_id_fk = c.category_id
                 WHERE soi.order_id IN
 
                 (SELECT so.order_id FROM sales_orders so

@@ -11,8 +11,10 @@ router.put("/:id", SuppliersController.updateSupplier);
 router.delete("/:id", SuppliersController.deleteSupplier);
 
 router.get(
-    "/transactions/:account_id&:start&:end",
-    SuppliersController.getSupplierBalance
+	"/transactions/:account_id&:start&:end",
+	SuppliersController.getSupplierBalance
 );
+
+router.get("/:id/balance", SuppliersController.getSupplierTotalBalance);
 
 module.exports = router;
