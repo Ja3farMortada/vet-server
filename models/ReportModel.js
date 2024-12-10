@@ -80,6 +80,24 @@ class ReportModel {
 		let [[result]] = await pool.query(query, [startDate, endDate]);
 		return result;
 	}
+
+	static async getTopCategories(startDate, endDate) {
+		let query = `SELECT PC.category_name,
+        SUM(SOI.quantity) AS count FROM sales_orders SO
+        INNER JOIN sales_order_items SOI ON SO.order_id = SOI.order_id
+        
+        INNER JOIN products P ON P.product_id  = SOI.product_id
+        INNER JOIN products_categories PC ON PC.category_id  = P.category_id_fk
+        WHERE SO.is_deleted = 0
+        AND DATE(SO.order_datetime) >= ?
+        AND DATE (SO.order_datetime) <= ?
+        GROUP BY PC.category_name
+        ORDER BY count DESC
+        LIMIT 10
+    `;
+		let [results] = await pool.query(query, [startDate, endDate]);
+		return results;
+	}
 }
 
 module.exports = ReportModel;
