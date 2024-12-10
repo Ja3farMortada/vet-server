@@ -9,24 +9,24 @@ const ensureLogDirectoryExists = (directory) => {
 	}
 };
 
-// var pool = mysql.createPool({
-// 	connectionLimit: 10,
-// 	host: "127.0.0.1",
-// 	user: "vet",
-// 	password: "5~q^ukf0iIU4",
-// 	database: "vet",
-// 	multipleStatements: true,
-// 	dateStrings: true,
-// });
 var pool = mysql.createPool({
 	connectionLimit: 10,
-	host: "localhost",
-	user: "root",
-	password: "roottoor",
+	host: "127.0.0.1",
+	user: "vet",
+	password: "5~q^ukf0iIU4",
 	database: "vet",
 	multipleStatements: true,
 	dateStrings: true,
 });
+// var pool = mysql.createPool({
+// 	connectionLimit: 10,
+// 	host: "localhost",
+// 	user: "root",
+// 	password: "roottoor",
+// 	database: "vet",
+// 	multipleStatements: true,
+// 	dateStrings: true,
+// });
 // pool.on("connection", (connection) => {
 //   const logDirectory = path.join(__dirname, "../logs");
 //   ensureLogDirectoryExists(logDirectory);
