@@ -71,6 +71,8 @@ class Customer {
 					
 				WHERE
 					ji.is_deleted = 0 
+
+				AND a.is_customer = 1
 				GROUP BY ji.partner_id_fk
 
 				HAVING balance != 0
