@@ -3,34 +3,57 @@ const pool = require("../config/database");
 class Product {
 	// get all products
 	static async getAll() {
+		// const query = `SELECT
+		//     C.category_name,
+		//     P.*,
+
+		//     IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'SUPPLY'), 0)
+
+		// 	+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'RETURN'), 0)
+
+		//     + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DELETE'), 0)
+
+		//     + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'ADD'), 0)
+
+		//     + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'REMOVE'), 0)
+
+		// 	+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'SALE'), 0)
+
+		// 	+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DISPOSE'), 0)
+
+		// 	+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DELIVER'), 0)
+
+		// 	AS quantity
+		//     FROM products P
+		//     LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
+
+		//     WHERE P.is_deleted = 0
+
+		//     ORDER BY P.product_id ASC`;
+
 		const query = `SELECT
-            C.category_name,
-            P.*,
+        			C.category_name,
+        			P.*,
+                    COALESCE(t.quantity, 0) AS quantity
+        		FROM products P
 
-
-            IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'SUPPLY'), 0)
-
-			+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'RETURN'), 0)
-
-            + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DELETE'), 0)
-
-            + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'ADD'), 0)
-
-            + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'REMOVE'), 0)
-
-			+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'SALE'), 0)
-
-			+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DISPOSE'), 0)
-
-			+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DELIVER'), 0)
-
-			AS quantity
-            FROM products P
-            LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
-    
-            WHERE P.is_deleted = 0
-
-            ORDER BY P.product_id ASC`;
+        		LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
+        		LEFT JOIN (
+        			SELECT
+        				product_id_fk,
+        				SUM(CASE WHEN transaction_type = 'SUPPLY' THEN quantity ELSE 0 END)
+                        + SUM(CASE WHEN transaction_type = 'RETURN' THEN quantity ELSE 0 END)
+                        + SUM(CASE WHEN transaction_type = 'DELETE' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'ADD' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'REMOVE' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'SALE' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'DISPOSE' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'DELIVER' THEN quantity ELSE 0 END) AS quantity
+        			FROM inventory_transactions
+        			GROUP BY product_id_fk
+        		) t ON P.product_id = t.product_id_fk
+        		WHERE P.is_deleted = 0
+        		ORDER BY P.product_id ASC;`;
 
 		const [result] = await pool.query(query);
 		return result;
@@ -198,7 +221,6 @@ class Product {
 
 	// delete product
 	static async delete(id) {
-		
 		const connection = await pool.getConnection();
 		try {
 			// begin transaction
