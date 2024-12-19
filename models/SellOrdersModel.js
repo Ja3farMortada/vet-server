@@ -241,7 +241,7 @@ class SellOrders {
 			)}`;
 
 			// add vouchers if customer is selected
-			if (order.customer_id) {
+			if (order.customer_id && order.journal_voucher_id) {
 				//insert to vouchers and journal_items
 				let query = `INSERT INTO journal_vouchers (journal_id, journal_number, journal_date, journal_description, total_value) VALUES (?, ?, ?, ?, ?)`;
 				const [journal_voucher] = await connection.query(query, [
