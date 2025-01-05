@@ -45,6 +45,20 @@ class ReportModel {
 		return result;
 	}
 
+	// get total expenses
+    static async getExpenses(startDate, endDate) {
+        let query = `SELECT
+        SUM(debit) AS totalExpenses
+        FROM journal_items
+        WHERE DATE(journal_date) >= ?
+        AND DATE(journal_date) <= ?
+        AND account_id_fk = 8;`;
+
+        let [[results]] = await pool.query(query, [startDate, endDate]);
+
+        return results;
+    }
+
 	// get top sales
 	static async getTopSales(startDate, endDate, id) {
 		let query = `SELECT p.product_id, p.product_name AS item_name, c.category_name,
@@ -98,6 +112,35 @@ class ReportModel {
 		let [results] = await pool.query(query, [startDate, endDate]);
 		return results;
 	}
+	// get stock value
+    static async getStockValue() {
+        const query = `SELECT
+            SUM((quantity * unit_cost_usd)) AS cost_value,
+            SUM((quantity * unit_price_usd)) AS selling_value,
+		    SUM(quantity) AS total_quantity
+        	FROM products P
+
+        	LEFT JOIN
+
+            (SELECT
+                product_id_fk,
+                SUM(CASE WHEN transaction_type = 'SUPPLY' THEN quantity ELSE 0 END)
+                + SUM(CASE WHEN transaction_type = 'RETURN' THEN quantity ELSE 0 END)
+                + SUM(CASE WHEN transaction_type = 'DELETE' THEN quantity ELSE 0 END)
+                + SUM(CASE WHEN transaction_type = 'ADD' THEN quantity ELSE 0 END)
+                + SUM(CASE WHEN transaction_type = 'REMOVE' THEN quantity ELSE 0 END)
+                + SUM(CASE WHEN transaction_type = 'SALE' THEN quantity ELSE 0 END)
+                + SUM(CASE WHEN transaction_type = 'DISPOSE' THEN quantity ELSE 0 END)
+                + SUM(CASE WHEN transaction_type = 'DELIVER' THEN quantity ELSE 0 END) AS quantity
+            FROM inventory_transactions
+            GROUP BY product_id_fk) t ON P.product_id = t.product_id_fk
+
+            WHERE P.is_deleted = 0
+            AND t.quantity > 0`;
+        let [[result]] = await pool.query(query);
+
+        return result;
+    }
 }
 
 module.exports = ReportModel;
