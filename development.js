@@ -16,13 +16,13 @@ const errorHandler = require("./middleware/errorHandler");
 const server = http.createServer(app);
 const socketIO = require("socket.io");
 const io = socketIO(server, {
-	cors: {
-		origins: ["*"],
-	},
+  cors: {
+    origins: ["*"],
+  },
 });
 app.use((req, res, next) => {
-	req.io = io;
-	next();
+  req.io = io;
+  next();
 });
 
 //import routes
@@ -64,8 +64,14 @@ app.use("/supply", auth, PurchaseOrdersRoutes);
 app.use("/users", admin, UsersRoutes);
 
 // check API status page
+app.get("/api", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// launch app
+app.use(express.static(path.join(__dirname, "app/browser")));
 app.get("/", (req, res) => {
-	res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "app/browser", "index.html"));
 });
 
 // handle errors

@@ -8,6 +8,8 @@
 /out-tsc
 /bazel-out
 
+/app
+
 errors
 logs
 

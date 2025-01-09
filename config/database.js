@@ -3,29 +3,29 @@ const fs = require("fs");
 const path = require("path");
 
 // Function to ensure the log directory exists
-const ensureLogDirectoryExists = (directory) => {
-	if (!fs.existsSync(directory)) {
-		fs.mkdirSync(directory, { recursive: true });
-	}
+const ensureLogDirectoryExists = directory => {
+  if (!fs.existsSync(directory)) {
+    fs.mkdirSync(directory, { recursive: true });
+  }
 };
 
 var pool = mysql.createPool({
-	connectionLimit: 10,
-	host: "127.0.0.1",
-	user: "vet",
-	password: "5~q^ukf0iIU4",
-	database: "vet",
-	multipleStatements: true,
-	dateStrings: true,
+  connectionLimit: 10,
+  host: "127.0.0.1",
+  user: "vet",
+  password: "5~q^ukf0iIU4",
+  database: "vet",
+  multipleStatements: true,
+  dateStrings: true,
 });
 // var pool = mysql.createPool({
-// 	connectionLimit: 10,
-// 	host: "localhost",
-// 	user: "root",
-// 	password: "roottoor",
-// 	database: "vet",
-// 	multipleStatements: true,
-// 	dateStrings: true,
+//   connectionLimit: 10,
+//   host: "localhost",
+//   user: "root",
+//   password: "roottoor",
+//   database: "vet",
+//   multipleStatements: true,
+//   dateStrings: true,
 // });
 // pool.on("connection", (connection) => {
 //   const logDirectory = path.join(__dirname, "../logs");
@@ -58,19 +58,19 @@ var pool = mysql.createPool({
 // });
 
 pool.getConnection(async (err, connection) => {
-	if (err) {
-		if (err.code === "PROTOCOL_CONNECTION_LOST") {
-			console.error("Database connection was closed.");
-		}
-		if (err.code === "ER_CON_COUNT_ERROR") {
-			console.error("Database has too many connections.");
-		}
-		if (err.code === "ECONNREFUSED") {
-			console.error("Database connection was refused.");
-		}
-	}
-	if (connection) await connection.release();
-	return;
+  if (err) {
+    if (err.code === "PROTOCOL_CONNECTION_LOST") {
+      console.error("Database connection was closed.");
+    }
+    if (err.code === "ER_CON_COUNT_ERROR") {
+      console.error("Database has too many connections.");
+    }
+    if (err.code === "ECONNREFUSED") {
+      console.error("Database connection was refused.");
+    }
+  }
+  if (connection) await connection.release();
+  return;
 });
 
 module.exports = pool;
