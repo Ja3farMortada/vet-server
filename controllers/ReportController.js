@@ -11,13 +11,13 @@ exports.getRevenue = async (req, res, next) => {
 };
 
 exports.getExpenses = async (req, res, next) => {
-    try {
-        const { start, end } = req.params;
-        const result = await Reports.getExpenses(start, end);
-        res.status(200).json(result);
-    } catch (error) {
-        next(error);
-    }
+	try {
+		const { start, end } = req.params;
+		const result = await Reports.getExpenses(start, end);
+		res.status(200).json(result);
+	} catch (error) {
+		next(error);
+	}
 };
 
 exports.getTopSales = async (req, res, next) => {
@@ -43,10 +43,21 @@ exports.getTopCategories = async (req, res, next) => {
 
 // stock value
 exports.getStockValue = async (req, res, next) => {
-    try {
-        let stockValue = await Reports.getStockValue();
-        res.status(200).send(stockValue);
-    } catch (error) {
-        next(error);
-    }
+	try {
+		let stockValue = await Reports.getStockValue();
+		res.status(200).send(stockValue);
+	} catch (error) {
+		next(error);
+	}
+};
+
+// product history
+exports.getProductHistory = async (req, res, next) => {
+	try {
+		const { start, end, id } = req.params;
+		let productHistory = await Reports.getProductHistory(start, end, id);
+		res.status(200).send(productHistory);
+	} catch (error) {
+		next(error);
+	}
 };

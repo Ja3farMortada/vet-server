@@ -46,18 +46,18 @@ class ReportModel {
 	}
 
 	// get total expenses
-    static async getExpenses(startDate, endDate) {
-        let query = `SELECT
+	static async getExpenses(startDate, endDate) {
+		let query = `SELECT
         SUM(debit) AS totalExpenses
         FROM journal_items
         WHERE DATE(journal_date) >= ?
         AND DATE(journal_date) <= ?
         AND account_id_fk = 8;`;
 
-        let [[results]] = await pool.query(query, [startDate, endDate]);
+		let [[results]] = await pool.query(query, [startDate, endDate]);
 
-        return results;
-    }
+		return results;
+	}
 
 	// get top sales
 	static async getTopSales(startDate, endDate, id) {
@@ -113,8 +113,8 @@ class ReportModel {
 		return results;
 	}
 	// get stock value
-    static async getStockValue() {
-        const query = `SELECT
+	static async getStockValue() {
+		const query = `SELECT
             SUM((quantity * unit_cost_usd)) AS cost_value,
             SUM((quantity * unit_price_usd)) AS selling_value,
 		    SUM(quantity) AS total_quantity
@@ -137,10 +137,30 @@ class ReportModel {
 
             WHERE P.is_deleted = 0
             AND t.quantity > 0`;
-        let [[result]] = await pool.query(query);
+		let [[result]] = await pool.query(query);
 
-        return result;
-    }
+		return result;
+	}
+
+	// get product history
+	static async getProductHistory(startDate, endDate, id) {
+		const query = `
+		SELECT
+			p.product_name,
+			soi.quantity,
+			soi.unit_cost,
+			soi.unit_price,
+			so.order_datetime,
+			so.invoice_number
+			FROM sales_order_items soi
+			INNER JOIN products p on p.product_id = soi.product_id
+			INNER JOIN sales_orders so ON so.order_id = soi.order_id 
+		WHERE p.product_id = ? 
+		AND DATE(so.order_datetime) BETWEEN ? AND ?`;
+
+		let [results] = await pool.query(query, [id, startDate, endDate]);
+		return results;
+	}
 }
 
 module.exports = ReportModel;
