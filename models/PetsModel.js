@@ -180,11 +180,13 @@ class Pet {
 			await connection.beginTransaction();
 
 			// delete from medical history
-			await connection.query('DELETE FROM medical_history WHERE pet_id_fk = ?', id)
+			await connection.query(
+				"DELETE FROM medical_history WHERE pet_id_fk = ?",
+				id
+			);
 
 			// delete transactions
-			await connection.query(
-				`DELETE FROM pets WHERE pet_id = ?`, id);
+			await connection.query(`DELETE FROM pets WHERE pet_id = ?`, id);
 
 			// commit transaction
 			await connection.commit();
@@ -198,7 +200,7 @@ class Pet {
 
 	// fetch history
 	static async fetchMedicalHistory(pet_id) {
-		let query = `SELECT * FROM medical_history WHERE pet_id_fk = ? ORDER BY record_datetime DESC`;
+		let query = `SELECT * FROM medical_history WHERE pet_id_fk = ? AND is_deleted = 0 ORDER BY record_datetime DESC`;
 
 		const [rows] = await pool.query(query, pet_id);
 		return rows;

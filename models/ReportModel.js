@@ -156,7 +156,8 @@ class ReportModel {
 			INNER JOIN products p on p.product_id = soi.product_id
 			INNER JOIN sales_orders so ON so.order_id = soi.order_id 
 		WHERE p.product_id = ? 
-		AND DATE(so.order_datetime) BETWEEN ? AND ?`;
+		AND DATE(so.order_datetime) BETWEEN ? AND ?
+		ORDER BY so.order_datetime ASC`;
 
 		let [results] = await pool.query(query, [id, startDate, endDate]);
 		return results;
