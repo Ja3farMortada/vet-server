@@ -24,7 +24,7 @@ class Payment {
 			const [journal_voucher] = await connection.query(query, [
 				payment_number,
 				paymentData.payment_date,
-				"Payment",
+				"Payment Received",
 				paymentData.amount,
 			]);
 
@@ -35,10 +35,10 @@ class Payment {
 				journal_date: paymentData.payment_date,
 				account_id_fk: _531.id,
 				reference_number: paymentData.reference_number,
-				partner_id_fk: paymentData.customer_id,
+				partner_id_fk: null,
 				currency: "USD",
-				debit: 0,
-				credit: paymentData.amount,
+				debit: paymentData.amount,
+				credit: 0,
 				exchange_value: paymentData.exchange_rate,
 			};
 
@@ -48,15 +48,16 @@ class Payment {
 			);
 
 			let [_413] = await Accounts.getIdByAccountNumber("413");
+
 			const secondItem = {
 				journal_id_fk: journal_voucher.insertId,
 				journal_date: paymentData.payment_date,
 				account_id_fk: _413.id,
 				reference_number: paymentData.reference_number,
-				partner_id_fk: null,
+				partner_id_fk: paymentData.account_id,
 				currency: "USD",
-				debit: paymentData.amount,
-				credit: 0,
+				debit: 0,
+				credit: paymentData.amount,
 				exchange_value: paymentData.exchange_rate,
 			};
 			await connection.query(
@@ -79,15 +80,15 @@ class Payment {
 		try {
 			await connection.beginTransaction();
 
-			moment.tz.setDefault("Asia/Beirut");
-			paymentData.payment_date = moment(paymentData.payment_date).format(
-				`YYYY-MM-DD HH:mm:ss`
-			);
+			// moment.tz.setDefault("Asia/Beirut");
+			// paymentData.payment_date = moment(paymentData.payment_date).format(
+			//     `YYYY-MM-DD HH:mm:ss`
+			// );
 
 			//insert to vouchers and journal_items
-			let query = `UPDATE journal_vouchers SET journal_date = ? ,  total_value = ? WHERE journal_id = ?`;
+			let query = `UPDATE journal_vouchers SET total_value = ? WHERE journal_id = ?`;
 			const [journal_voucher] = await connection.query(query, [
-				paymentData.payment_date,
+				// paymentData.payment_date,
 				paymentData.amount,
 				paymentData.journal_id,
 			]);
@@ -95,11 +96,10 @@ class Payment {
 			let [_531] = await Accounts.getIdByAccountNumber("531");
 
 			await connection.query(
-				`UPDATE journal_items SET credit=?, journal_date=?, partner_id_fk=? WHERE journal_id_fk=? AND account_id_fk=?`,
+				`UPDATE journal_items SET debit=?, journal_date=? WHERE journal_id_fk=? AND account_id_fk=?`,
 				[
 					paymentData.amount,
 					paymentData.payment_date,
-					paymentData.customer_id,
 					paymentData.journal_id,
 					_531.id,
 				]
@@ -108,10 +108,11 @@ class Payment {
 			let [_413] = await Accounts.getIdByAccountNumber("413");
 
 			await connection.query(
-				`UPDATE journal_items SET debit= ?, journal_date= ? WHERE journal_id_fk= ? AND account_id_fk= ?`,
+				`UPDATE journal_items SET credit= ?, journal_date= ?, partner_id_fk=? WHERE journal_id_fk= ? AND account_id_fk= ?`,
 				[
 					paymentData.amount,
 					paymentData.payment_date,
+					paymentData.account_id,
 					paymentData.journal_id,
 					_413.id,
 				]
@@ -125,6 +126,8 @@ class Payment {
 			connection.release();
 		}
 	}
+
+	// delete customer payment
 	static async deletePayment(journal_id) {
 		const connection = await pool.getConnection();
 		try {
@@ -139,13 +142,21 @@ class Payment {
 			);
 			journal_items = journal_items.map((item) => item.journal_item_id);
 
+			// await connection.query(
+			//     `DELETE FROM journal_items WHERE journal_item_id in (?)`,
+			//     [journal_items]
+			// );
 			await connection.query(
-				`DELETE FROM journal_items WHERE journal_item_id in (?)`,
+				`UPDATE journal_items SET is_deleted = 1 WHERE journal_item_id IN (?)`,
 				[journal_items]
 			);
 
+			// await connection.query(
+			//     `DELETE FROM journal_vouchers WHERE journal_id = ?`,
+			//     [journal_id]
+			// );
 			await connection.query(
-				`DELETE FROM journal_vouchers WHERE journal_id = ?`,
+				`UPDATE journal_vouchers SET is_deleted = 1 WHERE journal_id = ?`,
 				[journal_id]
 			);
 
