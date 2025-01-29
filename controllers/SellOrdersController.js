@@ -5,9 +5,11 @@ exports.addOrder = async (req, res, next) => {
 	try {
 		const order = req.body.invoice;
 		const items = order.items;
+		const payment = req.body.payment;
+
 		delete order.items;
 
-		const result = await SellOrders.addOrder(order, items);
+		const result = await SellOrders.addOrder(order, items, payment);
 		const new_order = await SellOrders.getAddedOrderById(result.order);
 		res.status(201).json(new_order);
 	} catch (error) {
