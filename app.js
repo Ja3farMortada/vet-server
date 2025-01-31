@@ -92,6 +92,10 @@ app.get("/", (req, res) => {
 	res.sendFile(path.join(__dirname, "app/browser", "index.html"));
 });
 
+app.get("*", (req, res) => {
+	res.sendFile(path.join(__dirname, "app/browser", "index.html"));
+});
+
 // handle errors
 app.use(errorHandler);
 server.listen(443, () => console.log(`listening on port 443 ...`));
