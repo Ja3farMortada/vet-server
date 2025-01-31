@@ -11,7 +11,7 @@ class History {
             A.financial_number,
             O.*,
             O.order_datetime AS order_date,
-            JSON_ARRAYAGG(JSON_OBJECT('order_item_id', M.order_item_id, 'product_id', M.product_id, 'product_name', S.product_name, 'barcode', S.barcode, 'quantity', M.quantity, 'price_type', M.price_type,'unit_cost', M.unit_cost, 'unit_price', M.unit_price, 'total_price', M.total_price)) items
+            JSON_ARRAYAGG(JSON_OBJECT('order_item_id', M.order_item_id, 'product_id', M.product_id, 'product_name', S.product_name, 'barcode', S.barcode, 'quantity', M.quantity, 'price_type', M.price_type, 'original_price', M.original_price, 'discount_percentage', M.discount_percentage, 'unit_cost', M.unit_cost, 'unit_price', M.unit_price, 'total_price', M.total_price)) items
             FROM sales_orders O
             INNER JOIN sales_order_items M ON O.order_id = M.order_id
             INNER JOIN products S ON S.product_id = M.product_id

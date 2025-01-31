@@ -58,6 +58,7 @@ const ReturnRoutes = require("./routes/return.routes");
 const ReservationsRoutes = require("./routes/reservations.routes");
 const PetsRoutes = require("./routes/pets.routes");
 const PurchaseOrdersRoutes = require("./routes/purchase.routes");
+const RemindersRoutes = require("./routes/reminders.routes");
 
 // common routes
 app.use("/auth", AuthRoutes);
@@ -75,6 +76,7 @@ app.use("/stock", StockRoutes);
 app.use("/reservations", auth, ReservationsRoutes);
 app.use("/pets", auth, PetsRoutes);
 app.use("/supply", auth, PurchaseOrdersRoutes);
+app.use("/reminders", auth, RemindersRoutes);
 
 // admin routes
 app.use("/users", admin, UsersRoutes);

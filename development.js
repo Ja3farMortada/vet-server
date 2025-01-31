@@ -16,13 +16,13 @@ const errorHandler = require("./middleware/errorHandler");
 const server = http.createServer(app);
 const socketIO = require("socket.io");
 const io = socketIO(server, {
-  cors: {
-    origins: ["*"],
-  },
+	cors: {
+		origins: ["*"],
+	},
 });
 app.use((req, res, next) => {
-  req.io = io;
-  next();
+	req.io = io;
+	next();
 });
 
 //import routes
@@ -42,6 +42,7 @@ const ReturnRoutes = require("./routes/return.routes");
 const ReservationsRoutes = require("./routes/reservations.routes");
 const PetsRoutes = require("./routes/pets.routes");
 const PurchaseOrdersRoutes = require("./routes/purchase.routes");
+const RemindersRoutes = require("./routes/reminders.routes");
 
 // common routes
 app.use("/auth", AuthRoutes);
@@ -55,23 +56,24 @@ app.use("/expense", auth, ExpenseRoutes);
 app.use("/report", auth, ReportRoutes);
 app.use("/return", auth, ReturnRoutes);
 app.use("/suppliers", auth, SuppliersRoutes);
-app.use("/stock", StockRoutes);
+app.use("/stock", auth, StockRoutes);
 app.use("/reservations", auth, ReservationsRoutes);
 app.use("/pets", auth, PetsRoutes);
 app.use("/supply", auth, PurchaseOrdersRoutes);
+app.use("/reminders", auth, RemindersRoutes);
 
 // admin routes
 app.use("/users", admin, UsersRoutes);
 
 // check API status page
 app.get("/api", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+	res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // launch app
 app.use(express.static(path.join(__dirname, "app/browser")));
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "app/browser", "index.html"));
+	res.sendFile(path.join(__dirname, "app/browser", "index.html"));
 });
 
 // handle errors

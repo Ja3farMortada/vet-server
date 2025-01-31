@@ -122,7 +122,11 @@ class SellOrders {
 					order_id,
 					item.product_id,
 					item.quantity,
+					item.original_price,
 					item.unit_price,
+					((item.original_price - item.unit_price) /
+						item.original_price) *
+						100,
 					item.price_type,
 					item.unit_cost,
 					item.quantity * item.unit_price,
@@ -130,7 +134,7 @@ class SellOrders {
 			});
 
 			await connection.query(
-				`INSERT INTO sales_order_items (order_id, product_id, quantity,  unit_price, price_type,unit_cost, total_price ) VALUES ?`,
+				`INSERT INTO sales_order_items (order_id, product_id, quantity, original_price, unit_price, discount_percentage, price_type,unit_cost, total_price ) VALUES ?`,
 				[invoice_map]
 			);
 
@@ -394,7 +398,11 @@ class SellOrders {
 					order_id,
 					item.product_id,
 					item.quantity,
+					item.original_price,
 					item.unit_price,
+					((item.original_price - item.unit_price) /
+						item.original_price) *
+						100,
 					item.price_type,
 					item.unit_cost,
 					item.quantity * item.unit_price,
@@ -402,7 +410,7 @@ class SellOrders {
 			});
 
 			const [new_order] = await connection.query(
-				`INSERT INTO sales_order_items (order_id, product_id, quantity,  unit_price, price_type,unit_cost, total_price ) VALUES ?`,
+				`INSERT INTO sales_order_items (order_id, product_id, quantity, original_price, unit_price, discount_percentage, price_type,unit_cost, total_price ) VALUES ?`,
 				[invoice_map]
 			);
 
