@@ -97,13 +97,12 @@ class PurchaseOrders {
 					item.product_name,
 					item.quantity,
 					item.unit_price,
-					item.unit_abbreviation,
-					item.product_unit_id,
+					item.variant_id,
 				];
 			});
 
 			await connection.query(
-				`INSERT INTO purchase_order_items (order_id_fk, product_id_fk, product_name, quantity,  unit_cost_usd, product_unit_abbreviation, product_unit_id ) VALUES ?`,
+				`INSERT INTO purchase_order_items (order_id_fk, product_id_fk, product_name, quantity,  unit_cost_usd, variant_id) VALUES ?`,
 				[invoice_map]
 			);
 
@@ -114,27 +113,32 @@ class PurchaseOrders {
 			if (items.length > 0) {
 				let queries = "";
 				let product_id = null;
+				let variant_id = null;
 				let quantity = null;
 				let params = [];
 
 				items.forEach((element) => {
-					product_id = element["product_id"];
-					product_ids.push(product_id);
-					quantity = element["quantity"];
+					if (element.stock_management == 1) {
+						product_id = element["product_id"];
+						variant_id = element["variant_id"] || null;
+						product_ids.push(product_id);
+						quantity = element["quantity"];
 
-					added_products_costs.push({
-						product_id,
-						quantity,
-						unit_cost: element["unit_price"],
-					});
-					params = params.concat([
-						product_id,
-						quantity,
-						order_id,
-						invoice_number,
-					]);
-					//add order_items to inventory transactions
-					queries += `INSERT INTO inventory_transactions (product_id_fk, quantity, transaction_type, order_id_fk, transaction_notes) VALUES (?, ?, 'SUPPLY', ?, ?);`;
+						added_products_costs.push({
+							product_id,
+							quantity,
+							unit_cost: element["unit_price"],
+						});
+						params = params.concat([
+							product_id,
+							variant_id,
+							quantity,
+							order_id,
+							invoice_number,
+						]);
+						//add order_items to inventory transactions
+						queries += `INSERT INTO inventory_transactions (product_id_fk, variant_id, quantity, transaction_type, order_id_fk, transaction_notes) VALUES (?, ?, ?, 'SUPPLY', ?, ?);`;
+					}
 				});
 				await connection.query(queries, params);
 			}
@@ -267,22 +271,26 @@ class PurchaseOrders {
 			);
 			if (!orderCheck) throw new Error("Order not found");
 
-			// update inventory qty for deleted items
-			let inventoryQueries = "";
-			let product_id = null;
-			let quantity = null;
-
 			// add deleted items to inventory transactions
 			await connection.query(
 				`DELETE FROM inventory_transactions WHERE order_id_fk = ? AND transaction_type = 'SUPPLY'`,
 				[order_id]
 			);
 
+			// update inventory qty for deleted items
+			let inventoryQueries = "";
+			let product_id = null;
+			let variant_id = null;
+			let quantity = null;
+
 			let product_ids = [];
 			let added_products_costs = [];
 			//add order_items to inventory transactions
 			items.forEach((element) => {
+				console.log(element);
+
 				product_id = element.product_id;
+				variant_id = element["variant_id"] || null;
 				quantity = element.quantity;
 				product_ids.push(product_id);
 
@@ -293,7 +301,7 @@ class PurchaseOrders {
 				});
 
 				// update inventory
-				inventoryQueries += `INSERT INTO inventory_transactions (product_id_fk, transaction_type, quantity, order_id_fk, transaction_notes) VALUES (${product_id}, 'SUPPLY', ${quantity}, ${order_id}, '${orderCheck.invoice_number}');`;
+				inventoryQueries += `INSERT INTO inventory_transactions (product_id_fk, variant_id, transaction_type, quantity, order_id_fk, transaction_notes) VALUES (${product_id}, ${variant_id}, 'SUPPLY', ${quantity}, ${order_id}, '${orderCheck.invoice_number}');`;
 			});
 			await connection.query(inventoryQueries);
 
@@ -388,6 +396,7 @@ class PurchaseOrders {
 				return [
 					order_id,
 					item.product_id,
+					item.variant_id,
 					item.product_name,
 					item.quantity,
 					item.unit_price,
@@ -397,7 +406,7 @@ class PurchaseOrders {
 			});
 
 			await connection.query(
-				`INSERT INTO purchase_order_items (order_id_fk, product_id_fk, product_name, quantity,  unit_cost_usd, product_unit_abbreviation, product_unit_id ) VALUES ?`,
+				`INSERT INTO purchase_order_items (order_id_fk, product_id_fk, variant_id, product_name, quantity,  unit_cost_usd, product_unit_abbreviation, product_unit_id ) VALUES ?`,
 				[invoice_map]
 			);
 

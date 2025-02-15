@@ -130,11 +130,12 @@ class SellOrders {
 					item.price_type,
 					item.unit_cost,
 					item.quantity * item.unit_price,
+					item.variant_id,
 				];
 			});
 
 			await connection.query(
-				`INSERT INTO sales_order_items (order_id, product_id, quantity, original_price, unit_price, discount_percentage, price_type,unit_cost, total_price ) VALUES ?`,
+				`INSERT INTO sales_order_items (order_id, product_id, quantity, original_price, unit_price, discount_percentage, price_type, unit_cost, total_price, variant_id ) VALUES ?`,
 				[invoice_map]
 			);
 
@@ -143,20 +144,24 @@ class SellOrders {
 			if (items.length > 0) {
 				let queries = "";
 				let product_id = null;
+				let variant_id = null;
 				let quantity = null;
 				let params = [];
+
 				items.forEach((element) => {
 					if (element.stock_management == 1) {
 						product_id = element["product_id"];
+						variant_id = element["variant_id"] || null;
 						quantity = element["quantity"];
 						params = params.concat([
 							product_id,
+							variant_id,
 							quantity,
 							order_id,
 							invoice_number,
 						]);
 						//add order_items to inventory transactions
-						queries += `INSERT INTO inventory_transactions (product_id_fk, quantity, transaction_type, order_id_fk, transaction_notes) VALUES (?, -?, 'SALE', ?, ?);`;
+						queries += `INSERT INTO inventory_transactions (product_id_fk, variant_id, quantity, transaction_type, order_id_fk, transaction_notes) VALUES (?, ?, -?, 'SALE', ?, ?);`;
 					}
 				});
 				if (queries) {
@@ -257,23 +262,26 @@ class SellOrders {
 				wasDebt = true;
 			}
 
-			// update inventory qty for deleted items
-			let inventoryQueries = "";
-			let product_id = null;
-			let quantity = null;
-
 			// delete items from inventory transactions
 			await connection.query(
 				`DELETE FROM inventory_transactions WHERE order_id_fk = ? AND transaction_type = 'SALE'`,
 				[order_id]
 			);
 
+			// update inventory qty for deleted items
+			let inventoryQueries = "";
+			let product_id = null;
+			let variant_id = null;
+			let quantity = null;
+
 			// add order_items to inventory transactions
 			items.forEach((element) => {
 				product_id = element.product_id;
+				variant_id = element["variant_id"] || null;
 				quantity = element.quantity;
+
 				// update inventory
-				inventoryQueries += `INSERT INTO inventory_transactions (product_id_fk, transaction_type, quantity, order_id_fk, transaction_notes) VALUES (${product_id}, 'SALE', -${quantity}, ${order_id}, '${orderCheck.invoice_number}');`;
+				inventoryQueries += `INSERT INTO inventory_transactions (product_id_fk, variant_id, transaction_type, quantity, order_id_fk, transaction_notes) VALUES (${product_id}, ${variant_id}, 'SALE', -${quantity}, ${order_id}, '${orderCheck.invoice_number}');`;
 			});
 			await connection.query(inventoryQueries);
 
@@ -397,6 +405,7 @@ class SellOrders {
 				return [
 					order_id,
 					item.product_id,
+					item.variant_id,
 					item.quantity,
 					item.original_price,
 					item.unit_price,
@@ -410,7 +419,7 @@ class SellOrders {
 			});
 
 			const [new_order] = await connection.query(
-				`INSERT INTO sales_order_items (order_id, product_id, quantity, original_price, unit_price, discount_percentage, price_type,unit_cost, total_price ) VALUES ?`,
+				`INSERT INTO sales_order_items (order_id, product_id, variant_id, quantity, original_price, unit_price, discount_percentage, price_type,unit_cost, total_price ) VALUES ?`,
 				[invoice_map]
 			);
 

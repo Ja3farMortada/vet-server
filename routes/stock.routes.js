@@ -5,6 +5,7 @@ const CategoryController = require("../controllers/CategoryController");
 const ProductController = require("../controllers/ProductController");
 const UnitController = require("../controllers/UnitController");
 const RateController = require("../controllers/RateController");
+const VariantsController = require("../controllers/VariantsController");
 
 router.get("/categories", CategoryController.getCategories);
 router.post("/categories", CategoryController.createCategory);
@@ -31,5 +32,9 @@ router.get("/rate", RateController.getExchangeRate);
 router.get("/rates", RateController.getRecentRates);
 router.get("/rates/graph/:year", RateController.getRatesGraph);
 router.post("/rate", RateController.addExchangeRate);
+
+router.post("/variants", VariantsController.createVariant);
+router.put("/variants", VariantsController.updateVariant);
+router.delete("/variants/:id", VariantsController.deleteVariant);
 
 module.exports = router;

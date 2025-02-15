@@ -3,47 +3,50 @@ const pool = require("../config/database");
 class Product {
 	// get all products
 	static async getAll() {
-		// const query = `SELECT
-		//     C.category_name,
-		//     P.*,
-
-		//     IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'SUPPLY'), 0)
-
-		// 	+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'RETURN'), 0)
-
-		//     + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DELETE'), 0)
-
-		//     + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'ADD'), 0)
-
-		//     + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'REMOVE'), 0)
-
-		// 	+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'SALE'), 0)
-
-		// 	+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DISPOSE'), 0)
-
-		// 	+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DELIVER'), 0)
-
-		// 	AS quantity
-		//     FROM products P
-		//     LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
-
-		//     WHERE P.is_deleted = 0
-
-		//     ORDER BY P.product_id ASC`;
-
 		const query = `SELECT
+					P.*,
         			C.category_name,
-        			P.*,
-                    COALESCE(t.quantity, 0) AS quantity
+              		COALESCE(t.quantity, 0) AS quantity,
+							
+					CASE WHEN P.has_variants = 1 THEN (
+						SELECT JSON_ARRAYAGG(
+								JSON_OBJECT(
+										'variant_id', V.variant_id,
+										'product_id_fk', V.product_id_fk,
+										'expiry_date', V.expiry_date,
+										'variant_quantity', COALESCE(vt.quantity, 0),
+										'is_deleted', V.is_deleted
+								)
+						)
+						FROM products_variants V
+						LEFT JOIN (
+							SELECT 
+								variant_id,
+								SUM(CASE WHEN transaction_type = 'SUPPLY' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'RETURN' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'DELETE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'ADD' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'REMOVE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'SALE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'DISPOSE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'DELIVER' THEN quantity ELSE 0 END) AS quantity
+							FROM inventory_transactions
+							GROUP BY variant_id
+						) vt ON V.variant_id = vt.variant_id
+						WHERE V.product_id_fk = P.product_id
+						AND V.is_deleted = 0)
+						ELSE NULL
+					END AS variants_records
+		
         		FROM products P
-
+	
         		LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
         		LEFT JOIN (
         			SELECT
-        				product_id_fk,
+						COALESCE(product_id_fk, NULL) AS product_id_fk,
         				SUM(CASE WHEN transaction_type = 'SUPPLY' THEN quantity ELSE 0 END)
-                        + SUM(CASE WHEN transaction_type = 'RETURN' THEN quantity ELSE 0 END)
-                        + SUM(CASE WHEN transaction_type = 'DELETE' THEN quantity ELSE 0 END)
+						+ SUM(CASE WHEN transaction_type = 'RETURN' THEN quantity ELSE 0 END)
+						+ SUM(CASE WHEN transaction_type = 'DELETE' THEN quantity ELSE 0 END)
         				+ SUM(CASE WHEN transaction_type = 'ADD' THEN quantity ELSE 0 END)
         				+ SUM(CASE WHEN transaction_type = 'REMOVE' THEN quantity ELSE 0 END)
         				+ SUM(CASE WHEN transaction_type = 'SALE' THEN quantity ELSE 0 END)
@@ -63,12 +66,59 @@ class Product {
 	static async getByCategory(category_id) {
 		const [rows] = await pool.query(
 			`SELECT
-		    C.category_name,
-		    P.*
-		    FROM products P
-		    LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
-		    WHERE C.category_id = ?
-		    AND P.is_deleted = 0`,
+					P.*,
+	    			C.category_name,
+	          		COALESCE(t.quantity, 0) AS quantity,
+
+					CASE WHEN P.has_variants = 1 THEN (
+						SELECT JSON_ARRAYAGG(
+								JSON_OBJECT(
+										'variant_id', V.variant_id,
+										'product_id_fk', V.product_id_fk,
+										'expiry_date', V.expiry_date,
+										'variant_quantity', COALESCE(vt.quantity, 0)
+								)
+						)
+						FROM products_variants V
+						LEFT JOIN (
+							SELECT
+								variant_id,
+								SUM(CASE WHEN transaction_type = 'SUPPLY' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'RETURN' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'DELETE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'ADD' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'REMOVE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'SALE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'DISPOSE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'DELIVER' THEN quantity ELSE 0 END) AS quantity
+							FROM inventory_transactions
+							GROUP BY variant_id
+						) vt ON V.variant_id = vt.variant_id
+						WHERE V.product_id_fk = P.product_id
+						AND V.is_deleted = 0)
+						ELSE NULL
+					END AS variants_records
+
+	    		FROM products P
+
+	    		LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
+	    		LEFT JOIN (
+	    			SELECT
+						COALESCE(product_id_fk, NULL) AS product_id_fk,
+	    				SUM(CASE WHEN transaction_type = 'SUPPLY' THEN quantity ELSE 0 END)
+						+ SUM(CASE WHEN transaction_type = 'RETURN' THEN quantity ELSE 0 END)
+						+ SUM(CASE WHEN transaction_type = 'DELETE' THEN quantity ELSE 0 END)
+	    				+ SUM(CASE WHEN transaction_type = 'ADD' THEN quantity ELSE 0 END)
+	    				+ SUM(CASE WHEN transaction_type = 'REMOVE' THEN quantity ELSE 0 END)
+	    				+ SUM(CASE WHEN transaction_type = 'SALE' THEN quantity ELSE 0 END)
+	    				+ SUM(CASE WHEN transaction_type = 'DISPOSE' THEN quantity ELSE 0 END)
+	    				+ SUM(CASE WHEN transaction_type = 'DELIVER' THEN quantity ELSE 0 END) AS quantity
+	    			FROM inventory_transactions
+	    			GROUP BY product_id_fk
+	    		) t ON P.product_id = t.product_id_fk
+	    		WHERE P.is_deleted = 0
+				AND P.category_id_fk = ?
+	    		ORDER BY P.product_id ASC;`,
 			[category_id]
 		);
 		return rows;
@@ -78,32 +128,59 @@ class Product {
 	static async getById(product_id) {
 		const [rows] = await pool.query(
 			`SELECT
-            C.category_name,
-            P.*,
-
-
-            IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'SUPPLY'), 0)
-
-			+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'RETURN'), 0)
-
-            + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'ADD'), 0)
-
-            + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DELETE'), 0)
-
-            + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'REMOVE'), 0)
-
-			+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'SALE'), 0)
-
-			+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DISPOSE'), 0)
-
-			+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DELIVER'), 0)
-
-
-			AS quantity
-            FROM products P
-            LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
-            WHERE P.product_id = ?
-            AND P.is_deleted = 0`,
+					P.*,
+        			C.category_name,
+              		COALESCE(t.quantity, 0) AS quantity,
+							
+					CASE WHEN P.has_variants = 1 THEN (
+						SELECT JSON_ARRAYAGG(
+								JSON_OBJECT(
+										'variant_id', V.variant_id,
+										'product_id_fk', V.product_id_fk,
+										'expiry_date', V.expiry_date,
+										'variant_quantity', COALESCE(vt.quantity, 0)
+								)
+						)
+						FROM products_variants V
+						LEFT JOIN (
+							SELECT 
+								variant_id,
+								SUM(CASE WHEN transaction_type = 'SUPPLY' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'RETURN' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'DELETE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'ADD' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'REMOVE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'SALE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'DISPOSE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'DELIVER' THEN quantity ELSE 0 END) AS quantity
+							FROM inventory_transactions
+							GROUP BY variant_id
+						) vt ON V.variant_id = vt.variant_id
+						WHERE V.product_id_fk = P.product_id
+						AND V.is_deleted = 0)
+						ELSE NULL
+					END AS variants_records
+		
+        		FROM products P
+	
+        		LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
+        		LEFT JOIN (
+        			SELECT
+						COALESCE(product_id_fk, NULL) AS product_id_fk,
+        				SUM(CASE WHEN transaction_type = 'SUPPLY' THEN quantity ELSE 0 END)
+						+ SUM(CASE WHEN transaction_type = 'RETURN' THEN quantity ELSE 0 END)
+						+ SUM(CASE WHEN transaction_type = 'DELETE' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'ADD' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'REMOVE' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'SALE' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'DISPOSE' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'DELIVER' THEN quantity ELSE 0 END) AS quantity
+        			FROM inventory_transactions
+        			GROUP BY product_id_fk
+        		) t ON P.product_id = t.product_id_fk
+        		WHERE P.is_deleted = 0
+				AND P.product_id = ?
+        		ORDER BY P.product_id ASC;`,
 			[product_id]
 		);
 		return rows;
@@ -112,33 +189,57 @@ class Product {
 	static async getByBarcode(barcode) {
 		const [rows] = await pool.query(
 			`SELECT
-            C.category_name,
-            P.*,
-
-
-            IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'SUPPLY'), 0)
-
-			+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'RETURN'), 0)
-
-            + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'ADD'), 0)
-
-            + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DELETE'), 0)
-
-            + IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'REMOVE'), 0)
-
-			+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'SALE'), 0)
-
-			+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DISPOSE'), 0)
-
-			+ IFNULL((SELECT SUM(quantity) FROM inventory_transactions WHERE product_id_fk = P.product_id AND transaction_type = 'DELIVER'), 0)
-
-
-			AS quantity
-            FROM products P
-            LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
-
-            WHERE P.barcode = ?
-            AND P.is_deleted = 0`,
+					P.*,
+        			C.category_name,
+              		COALESCE(t.quantity, 0) AS quantity,
+							
+					CASE WHEN P.has_variants = 1 THEN (
+						SELECT JSON_ARRAYAGG(
+								JSON_OBJECT(
+										'variant_id', V.variant_id,
+										'expiry_date', V.expiry_date,
+										'variant_quantity', COALESCE(vt.quantity, 0)
+								)
+						)
+						FROM products_variants V
+						LEFT JOIN (
+							SELECT 
+								variant_id,
+								SUM(CASE WHEN transaction_type = 'SUPPLY' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'RETURN' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'DELETE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'ADD' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'REMOVE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'SALE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'DISPOSE' THEN quantity ELSE 0 END)
+								+ SUM(CASE WHEN transaction_type = 'DELIVER' THEN quantity ELSE 0 END) AS quantity
+							FROM inventory_transactions
+							GROUP BY variant_id
+						) vt ON V.variant_id = vt.variant_id
+						WHERE V.product_id_fk = P.product_id)
+						ELSE NULL
+					END AS variants_records
+		
+        		FROM products P
+	
+        		LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
+        		LEFT JOIN (
+        			SELECT
+						COALESCE(product_id_fk, NULL) AS product_id_fk,
+        				SUM(CASE WHEN transaction_type = 'SUPPLY' THEN quantity ELSE 0 END)
+						+ SUM(CASE WHEN transaction_type = 'RETURN' THEN quantity ELSE 0 END)
+						+ SUM(CASE WHEN transaction_type = 'DELETE' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'ADD' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'REMOVE' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'SALE' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'DISPOSE' THEN quantity ELSE 0 END)
+        				+ SUM(CASE WHEN transaction_type = 'DELIVER' THEN quantity ELSE 0 END) AS quantity
+        			FROM inventory_transactions
+        			GROUP BY product_id_fk
+        		) t ON P.product_id = t.product_id_fk
+        		WHERE P.is_deleted = 0
+				AND P.barcode = ?
+        		ORDER BY P.product_id ASC;`,
 			[barcode]
 		);
 		return rows;
@@ -160,6 +261,7 @@ class Product {
 				product_notes: data.product_notes,
 				low_stock_threshold: data.low_stock_threshold,
 				stock_management: data.stock_management,
+				has_variants: data.has_variants,
 			};
 			// // insert into product table
 			const [rows] = await connection.query(
@@ -201,6 +303,7 @@ class Product {
 				unit_price_usd: data.unit_price_usd,
 				product_notes: data.product_notes,
 				stock_management: data.stock_management,
+				has_variants: data.has_variants,
 			};
 
 			// update product table
@@ -253,12 +356,22 @@ class Product {
 		if (data.transaction_type === "REMOVE") {
 			data.quantity = -data.quantity;
 		}
+
+		if (!data.variant_id) {
+			delete data.variant_id;
+		}
+
 		let query = `INSERT INTO inventory_transactions SET ?`;
 		await pool.query(query, data);
 	}
 
 	static async getHistoryById(id) {
-		const query = `SELECT * FROM inventory_transactions WHERE product_id_fk = ? AND is_deleted = 0 ORDER BY transaction_datetime DESC LIMIT 100`;
+		const query = `SELECT
+		T.*,
+		V.expiry_date
+		FROM inventory_transactions T
+		LEFT JOIN products_variants V ON V.variant_id = T.variant_id
+		WHERE T.product_id_fk = ? AND T.is_deleted = 0 ORDER BY T.transaction_datetime DESC LIMIT 100`;
 		let [rows] = await pool.query(query, id);
 		return rows;
 	}
