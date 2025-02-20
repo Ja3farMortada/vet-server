@@ -59,6 +59,21 @@ class ReportModel {
 		return results;
 	}
 
+	// get total supplier payments
+	static async getSupplierPayments(startDate, endDate) {
+		let query = `SELECT
+        SUM(total_value) AS totalSupplierPayments
+        FROM journal_vouchers
+        WHERE DATE(journal_date) >= ?
+        AND DATE(journal_date) <= ?
+        AND journal_number LIKE 'REC%'
+		AND is_deleted = 0`;
+
+		let [[results]] = await pool.query(query, [startDate, endDate]);
+
+		return results;
+	}
+
 	// get top sales
 	static async getTopSales(startDate, endDate, id) {
 		let query = `SELECT p.product_id, p.product_name AS item_name, c.category_name,

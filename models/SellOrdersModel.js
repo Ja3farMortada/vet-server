@@ -110,12 +110,10 @@ class SellOrders {
 			);
 
 			// update journal voucher number
-			if (order.customer_id && operation_type == "debt") {
-				await connection.query(
-					`UPDATE journal_vouchers SET journal_number = ? WHERE journal_id = ?`,
-					[invoice_number, journal_voucher.insertId]
-				);
-			}
+			await connection.query(
+				`UPDATE journal_vouchers SET journal_number = ? WHERE journal_id = ?`,
+				[invoice_number, journal_voucher.insertId]
+			);
 
 			let invoice_map = Array.from(items).map(function (item) {
 				return [
@@ -397,6 +395,12 @@ class SellOrders {
 				[order.invoice_number, order.journal_voucher_id]
 			);
 
+			// update journal voucher number
+			await connection.query(
+				`UPDATE journal_vouchers SET journal_number = ? WHERE journal_id = ?`,
+				[order.invoice_number, order.journal_voucher_id]
+			);
+
 			order.exchange_rate = orderCheck.exchange_rate;
 			// insert query
 			await connection.query(`INSERT INTO sales_orders SET ?`, order);
@@ -453,7 +457,7 @@ class SellOrders {
 				[order_id]
 			);
 
-			if (orderCheck.customer_id && orderCheck.journal_voucher_id) {
+			if (orderCheck.journal_voucher_id) {
 				//delete voucher and items
 				let deleteVoucherQuery = `DELETE FROM journal_vouchers WHERE journal_id = ?`;
 				await connection.query(

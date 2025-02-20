@@ -20,6 +20,16 @@ exports.getExpenses = async (req, res, next) => {
 	}
 };
 
+exports.getSupplierPayments = async (req, res, next) => {
+	try {
+		const { start, end } = req.params;
+		const result = await Reports.getSupplierPayments(start, end);
+		res.status(200).json(result);
+	} catch (error) {
+		next(error);
+	}
+};
+
 exports.getTopSales = async (req, res, next) => {
 	try {
 		const { start, end, id } = req.params;
