@@ -1,11 +1,34 @@
 const Balance = require("../models/BalanceModel");
 
 //get user balance
-exports.getBalanceByUserId = async (req, res, next) => {
-	const userId = req.user.user_id;
+exports.getBalance = async (req, res, next) => {
 	try {
-		const balance = await Balance.getBalanceByUserId(userId);
-		res.status(200).json(balance);
+		const balance = await Balance.getBalance();
+		res.status(200).send(balance);
+	} catch (error) {
+		next(error);
+	}
+};
+
+// get cash transactions history
+exports.getCashTransactions = async (req, res, next) => {
+	try {
+		const { start, end } = req.params;
+		const results = await Balance.getCashTransactions(start, end);
+		res.status(200).send(results);
+	} catch (error) {
+		next(error);
+	}
+};
+
+// correct balance
+exports.correctBalance = async (req, res, next) => {
+	try {
+		let data = req.body;
+		await Balance.correctBalance(data);
+		res.status(201).json({
+			message: "Balance has been updated successfully!",
+		});
 	} catch (error) {
 		next(error);
 	}

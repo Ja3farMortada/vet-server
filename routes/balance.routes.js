@@ -4,8 +4,13 @@ const { admin } = require("../middleware/auth");
 
 const BalanceController = require("../controllers/BalanceController");
 
-router.get("/user", BalanceController.getBalanceByUserId);
+router.get("/", BalanceController.getBalance);
 router.get("/all", admin, BalanceController.getAllUsersBalance);
+
+// get cash transactions history
+router.get("/transactions/:start&:end", BalanceController.getCashTransactions);
+
+router.post("/correct", BalanceController.correctBalance);
 
 //money transfer
 router.post("/transfer", BalanceController.transferMoney);
