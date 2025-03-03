@@ -18,7 +18,7 @@ exports.login = async (req, res, next) => {
 					user_type: result.user_type,
 					first_name: result.first_name,
 				},
-				"$3a#_cJDUV-$QsRewWXcyH-Xdji8#%^$*(_ZkfNdI@#!D-Nv0E_M3a"
+				"$3a#_cJDUV-$QsRewWXcyH-Xdji8vet101#%^$*(_ZkfNdI@#!D-Nv0E_M3a"
 			);
 
 			const user = {
@@ -32,8 +32,8 @@ exports.login = async (req, res, next) => {
 					show_cost: result.show_cost,
 					edit_invoice: result.edit_invoice,
 					delete_invoice: result.delete_invoice,
-					show_reports: result.show_reports
-				}
+					show_reports: result.show_reports,
+				},
 			};
 			if (user.user_type !== "admin") {
 				io.emit("userLoggedIn", username);
