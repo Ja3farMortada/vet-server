@@ -10,7 +10,7 @@ const verifyToken = (req, res, next) => {
 	try {
 		const decoded = jwt.verify(
 			token,
-			"$3a#_cJDUV-$QsRewWXcyH-Xdji8#%^$*(_ZkfNdI@#!D-Nv0E_M3a"
+			"$3a#_cJDUV-$QsRewWXcyH-Xdji8vet101#%^$*(_ZkfNdI@#!D-Nv0E_M3a"
 		);
 		req.user = decoded;
 	} catch (err) {
