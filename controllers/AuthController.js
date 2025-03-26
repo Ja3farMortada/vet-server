@@ -33,6 +33,7 @@ exports.login = async (req, res, next) => {
 					edit_invoice: result.edit_invoice,
 					delete_invoice: result.delete_invoice,
 					show_reports: result.show_reports,
+					show_history: result.show_history,
 				},
 			};
 			if (user.user_type !== "admin") {
