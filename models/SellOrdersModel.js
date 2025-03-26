@@ -473,11 +473,11 @@ class SellOrders {
 			}
 
 			// delete old items
-			let deleteItemsQuery = `DELETE FROM sales_order_items WHERE order_id = ?`;
+			let deleteItemsQuery = `UPDATE sales_order_items SET is_deleted = 1 WHERE order_id = ?`;
 			await connection.query(deleteItemsQuery, order_id);
 
 			// delete old invoice
-			let deleteOrderQuery = `DELETE FROM sales_orders WHERE order_id = ?`;
+			let deleteOrderQuery = `UPDATE sales_orders SET is_deleted = 1 WHERE order_id = ?`;
 			await connection.query(deleteOrderQuery, order_id);
 
 			await connection.commit();

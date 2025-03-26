@@ -1,7 +1,7 @@
 {
   "name": "server",
-  "version": "1.0.0",
-  "description": "express server for karizma app",
+  "version": "2.10.0",
+  "description": "Server for vet app",
   "main": "app.js",
   "scripts": {
     "start": "nodemon development.js",

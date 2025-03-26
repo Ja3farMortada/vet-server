@@ -42,6 +42,46 @@ class History {
 		return rows;
 	}
 
+	// fetch sales invoices
+	static async fetchDeletedHistory(criteria) {
+		let sql = `SELECT
+            A.name AS customer_name,
+            A.phone AS customer_phone,
+            A.address AS customer_address,
+            A.financial_number,
+            O.*,
+            O.order_datetime AS order_date,
+            JSON_ARRAYAGG(JSON_OBJECT('order_item_id', M.order_item_id, 'product_id', M.product_id, 'product_name', S.product_name, 'variant_id', M.variant_id, 'expiry_date', V.expiry_date, 'barcode', S.barcode, 'quantity', M.quantity, 'price_type', M.price_type, 'original_price', M.original_price, 'discount_percentage', M.discount_percentage, 'unit_cost', M.unit_cost, 'unit_price', M.unit_price, 'total_price', M.total_price)) items
+            FROM sales_orders O
+            INNER JOIN sales_order_items M ON O.order_id = M.order_id
+            INNER JOIN products S ON S.product_id = M.product_id
+			LEFT JOIN products_variants V ON M.variant_id = V.variant_id
+            LEFT JOIN accounts  A ON O.customer_id = A.account_id
+            WHERE O.is_deleted = 1`;
+		const params = [];
+		if (criteria.invoice_number) {
+			sql += ` AND O.invoice_number LIKE ?`;
+			params.push(`%${criteria.invoice_number}`);
+		}
+		if (criteria.customer_id) {
+			sql += ` AND O.customer_id = ?`;
+			params.push(criteria.customer_id);
+		}
+		if (criteria.invoice_date) {
+			sql += ` AND DATE(order_datetime) = ?`;
+			params.push(moment(criteria.invoice_date).format("yyyy-MM-DD"));
+		}
+
+		sql += ` GROUP BY O.order_id
+        ORDER BY order_date DESC, O.invoice_number DESC
+        LIMIT ? OFFSET ?`;
+		params.push(criteria.limit || 100);
+		params.push(criteria.offset || 0);
+
+		const [rows] = await pool.query(sql, params);
+		return rows;
+	}
+
 	//fetch payment history
 	static async fetchPaymentHistory(criteria) {
 		let sql = `SELECT

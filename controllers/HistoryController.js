@@ -10,6 +10,16 @@ exports.fetchSalesHistory = async (req, res, next) => {
 	}
 };
 
+exports.fetchDeletedHistory = async (req, res, next) => {
+	try {
+		let criteria = req.body;
+		let invoices = await History.fetchDeletedHistory(criteria);
+		res.status(200).send(invoices);
+	} catch (error) {
+		next(error);
+	}
+};
+
 exports.fetchPaymentHistory = async (req, res, next) => {
 	try {
 		let criteria = req.body;

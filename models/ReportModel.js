@@ -171,6 +171,8 @@ class ReportModel {
 			INNER JOIN products p on p.product_id = soi.product_id
 			INNER JOIN sales_orders so ON so.order_id = soi.order_id 
 		WHERE p.product_id = ? 
+		AND soi.is_deleted = 0 
+		AND so.is_deleted = 0
 		AND DATE(so.order_datetime) BETWEEN ? AND ?
 		ORDER BY so.order_datetime DESC`;
 
