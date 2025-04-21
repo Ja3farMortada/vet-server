@@ -5,7 +5,11 @@ class Product {
 	static async getAll() {
 		const query = `SELECT
 					P.*,
+					C.category_id,
+					C.group_id_fk,
         			C.category_name,
+					G.group_id,
+					G.group_name,
               		COALESCE(t.quantity, 0) AS quantity,
 							
 					CASE WHEN P.has_variants = 1 THEN (
@@ -41,6 +45,7 @@ class Product {
         		FROM products P
 	
         		LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
+				LEFT JOIN category_groups G ON C.group_id_fk = G.group_id
         		LEFT JOIN (
         			SELECT
 						COALESCE(product_id_fk, NULL) AS product_id_fk,
@@ -67,7 +72,11 @@ class Product {
 		const [rows] = await pool.query(
 			`SELECT
 					P.*,
-	    			C.category_name,
+	    			C.category_id,
+					C.group_id_fk,
+        			C.category_name,
+					G.group_id,
+					G.group_name,
 	          		COALESCE(t.quantity, 0) AS quantity,
 
 					CASE WHEN P.has_variants = 1 THEN (
@@ -102,6 +111,7 @@ class Product {
 	    		FROM products P
 
 	    		LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
+				LEFT JOIN category_groups G ON C.group_id_fk = G.group_id
 	    		LEFT JOIN (
 	    			SELECT
 						COALESCE(product_id_fk, NULL) AS product_id_fk,
@@ -129,7 +139,11 @@ class Product {
 		const [rows] = await pool.query(
 			`SELECT
 					P.*,
+        			C.category_id,
+					C.group_id_fk,
         			C.category_name,
+					G.group_id,
+					G.group_name,
               		COALESCE(t.quantity, 0) AS quantity,
 							
 					CASE WHEN P.has_variants = 1 THEN (
@@ -164,6 +178,7 @@ class Product {
         		FROM products P
 	
         		LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
+				LEFT JOIN category_groups G ON C.group_id_fk = G.group_id
         		LEFT JOIN (
         			SELECT
 						COALESCE(product_id_fk, NULL) AS product_id_fk,
@@ -190,7 +205,11 @@ class Product {
 		const [rows] = await pool.query(
 			`SELECT
 					P.*,
+        			C.category_id,
+					C.group_id_fk,
         			C.category_name,
+					G.group_id,
+					G.group_name,
               		COALESCE(t.quantity, 0) AS quantity,
 							
 					CASE WHEN P.has_variants = 1 THEN (
@@ -223,6 +242,7 @@ class Product {
         		FROM products P
 	
         		LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
+				LEFT JOIN category_groups G ON C.group_id_fk = G.group_id
         		LEFT JOIN (
         			SELECT
 						COALESCE(product_id_fk, NULL) AS product_id_fk,

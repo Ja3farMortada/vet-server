@@ -14,7 +14,7 @@ router.get("/top-sales/:start&:end&:id", ReportController.getTopSales);
 router.get("/stock-value", ReportController.getStockValue);
 
 router.get(
-	"/product-history/:start&:end&:id",
+	"/product-history/:start&:end&:id&:searchBy",
 	ReportController.getProductHistory
 );
 

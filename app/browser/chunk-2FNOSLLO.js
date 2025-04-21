@@ -1,0 +1,1 @@
+import{R as i}from"./chunk-LELVKHSM.js";var m=(()=>{let t=class t{transform(e){return new Intl.NumberFormat("en-US",{minimumFractionDigits:0}).format(Number(e))+" L.L"}};t.\u0275fac=function(n){return new(n||t)},t.\u0275pipe=i({name:"lira",type:t,pure:!0,standalone:!0});let r=t;return r})();export{m as a};

@@ -158,10 +158,12 @@ class ReportModel {
 	}
 
 	// get product history
-	static async getProductHistory(startDate, endDate, id) {
-		const query = `
+	static async getProductHistory(startDate, endDate, id, searchBy) {
+		let query = `
 		SELECT
 			p.product_name,
+			c.category_name,
+			g.group_name,
 			soi.quantity,
 			soi.unit_cost,
 			soi.unit_price,
@@ -169,12 +171,32 @@ class ReportModel {
 			so.invoice_number
 			FROM sales_order_items soi
 			INNER JOIN products p on p.product_id = soi.product_id
+			LEFT JOIN products_categories c ON p.category_id_fk = c.category_id
+			LEFT JOIN category_groups g ON c.group_id_fk = g.group_id
 			INNER JOIN sales_orders so ON so.order_id = soi.order_id 
-		WHERE p.product_id = ? 
-		AND soi.is_deleted = 0 
+		WHERE `;
+
+		let queryKey = ``;
+		switch (searchBy) {
+			case "product":
+				queryKey = `p.product_id = ? `;
+				break;
+			case "category":
+				queryKey = `c.category_id = ? `;
+				break;
+			case "group":
+				queryKey = `g.group_id = ? `;
+				break;
+		}
+
+		query += queryKey;
+
+		query += `AND soi.is_deleted = 0 
 		AND so.is_deleted = 0
 		AND DATE(so.order_datetime) BETWEEN ? AND ?
 		ORDER BY so.order_datetime DESC`;
+
+		console.log(query);
 
 		let [results] = await pool.query(query, [id, startDate, endDate]);
 		return results;

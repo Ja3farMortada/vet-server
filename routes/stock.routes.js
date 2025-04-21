@@ -2,10 +2,13 @@ const express = require("express");
 const router = express.Router();
 
 const CategoryController = require("../controllers/CategoryController");
+const GroupsController = require("../controllers/GroupsController");
 const ProductController = require("../controllers/ProductController");
 const UnitController = require("../controllers/UnitController");
 const RateController = require("../controllers/RateController");
 const VariantsController = require("../controllers/VariantsController");
+
+router.get("/groups", GroupsController.getGroups);
 
 router.get("/categories", CategoryController.getCategories);
 router.post("/categories", CategoryController.createCategory);

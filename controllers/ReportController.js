@@ -64,8 +64,15 @@ exports.getStockValue = async (req, res, next) => {
 // product history
 exports.getProductHistory = async (req, res, next) => {
 	try {
-		const { start, end, id } = req.params;
-		let productHistory = await Reports.getProductHistory(start, end, id);
+		const { start, end, id, searchBy } = req.params;
+		console.log(req.params);
+
+		let productHistory = await Reports.getProductHistory(
+			start,
+			end,
+			id,
+			searchBy
+		);
 		res.status(200).send(productHistory);
 	} catch (error) {
 		next(error);
