@@ -10,6 +10,7 @@ router.get(
 	ReportController.getSupplierPayments
 );
 router.get("/revenue/:start/:end", ReportController.getRevenue);
+router.get("/revenue-grouped/:start/:end", ReportController.getGroupedRevenue);
 router.get("/top-sales/:start&:end&:id", ReportController.getTopSales);
 router.get("/stock-value", ReportController.getStockValue);
 

@@ -10,6 +10,16 @@ exports.getRevenue = async (req, res, next) => {
 	}
 };
 
+exports.getGroupedRevenue = async (req, res, next) => {
+	try {
+		const { start, end } = req.params;
+		const result = await Reports.getGroupedRevenue(start, end);
+		res.status(200).send(result);
+	} catch (error) {
+		next(error);
+	}
+};
+
 exports.getExpenses = async (req, res, next) => {
 	try {
 		const { start, end } = req.params;

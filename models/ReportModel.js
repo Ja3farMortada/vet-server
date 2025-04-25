@@ -1,6 +1,7 @@
 const pool = require("../config/database");
 
 class ReportModel {
+	// get revenue
 	static async getRevenue(startDate, endDate) {
 		let query = ` WITH sales_summary AS (
             SELECT
@@ -39,6 +40,43 @@ class ReportModel {
 			startDate,
 			endDate,
 
+			startDate,
+			endDate,
+		]);
+		return result;
+	}
+
+	// get revenue by group
+	static async getGroupedRevenue(startDate, endDate) {
+		const query = `WITH shop_sales AS (
+            SELECT SUM(total_price) AS shop_sales FROM sales_order_items SOI 
+				INNER JOIN sales_orders O ON SOI.order_id = O.order_id
+				INNER JOIN products P ON SOI.product_id = P.product_id
+				INNER JOIN products_categories C ON P.category_id_fk = C.category_id
+				INNER JOIN category_groups G ON C.group_id_fk = G.group_id
+				WHERE DATE(O.order_datetime) BETWEEN ? AND ?
+				AND G.group_id = 1
+				AND SOI.is_deleted = 0
+        	),
+        	medical_sales AS (
+            SELECT SUM(total_price) AS medical_sales FROM sales_order_items SOI 
+				INNER JOIN sales_orders O ON SOI.order_id = O.order_id
+				INNER JOIN products P ON SOI.product_id = P.product_id
+				INNER JOIN products_categories C ON P.category_id_fk = C.category_id
+				INNER JOIN category_groups G ON C.group_id_fk = G.group_id
+				WHERE DATE(O.order_datetime) BETWEEN ? AND ?
+				AND G.group_id = 2
+				AND SOI.is_deleted = 0
+        	)
+			SELECT
+				shop_sales, medical_sales
+			FROM
+				shop_sales
+				CROSS JOIN medical_sales;`;
+
+		let [[result]] = await pool.query(query, [
+			startDate,
+			endDate,
 			startDate,
 			endDate,
 		]);
