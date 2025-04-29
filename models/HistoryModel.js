@@ -94,7 +94,8 @@ class History {
                 FROM journal_vouchers P
                 INNER JOIN journal_items I ON P.journal_id = I.journal_id_fk
                 INNER JOIN accounts A ON I.partner_id_fk = A.account_id
-                WHERE P.is_deleted = 0 AND journal_description = 'Payment' OR journal_description = 'Payment Received'`;
+                WHERE P.is_deleted = 0
+				AND (journal_description = 'Payment' OR journal_description = 'Payment Received')`;
 		const params = [];
 		if (criteria.payment_number) {
 			sql += ` AND P.journal_number = ?`;
