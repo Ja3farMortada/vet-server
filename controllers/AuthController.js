@@ -25,6 +25,7 @@ exports.login = async (req, res, next) => {
 				username: username,
 				first_name: result.first_name,
 				user_type: result.user_type,
+				socket_id: result.user_id,
 				token: token,
 				permissions: {
 					edit_pets: result.edit_pets,

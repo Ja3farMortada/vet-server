@@ -31,9 +31,7 @@ class Pet {
 
 		sql += ` GROUP BY P.pet_id
 		 ORDER BY pet_id DESC
-        LIMIT ? OFFSET ?`;
-		params.push(criteria.limit || 50);
-		params.push(criteria.offset || 0);
+        LIMIT 1000`;
 
 		const [rows] = await pool.query(sql, params);
 		return rows;
@@ -225,6 +223,9 @@ class Pet {
 	static async updateMedicalHistory(data) {
 		let record = {
 			medical_description: data.medical_description,
+			record_datetime: moment(data.record_datetime).format(
+				"YYYY-MM-DD HH:mm:ss"
+			),
 			medical_notes: data.medical_notes,
 		};
 		let query = `UPDATE medical_history SET ? WHERE record_id = ?`;

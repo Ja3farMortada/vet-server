@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { admin } = require("../middleware/auth");
+// const { admin } = require("../middleware/auth");
 
 const CustomersController = require("../controllers/CustomersController");
 
@@ -23,6 +23,6 @@ router.get(
 router.get("/:id/balance", CustomersController.getCustomerTotalBalance);
 
 //admin routes
-router.use(admin);
+// router.use(admin);
 
 module.exports = router;

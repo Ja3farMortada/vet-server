@@ -46,7 +46,7 @@ const RemindersRoutes = require("./routes/reminders.routes");
 
 // common routes
 app.use("/auth", AuthRoutes);
-app.use("/customers", CustomersRoutes);
+app.use("/customers", auth, CustomersRoutes);
 app.use("/profile", auth, ProfileRoutes);
 app.use("/sell-orders", auth, SellOrdersRoutes);
 app.use("/history", auth, HistoryRoutes);

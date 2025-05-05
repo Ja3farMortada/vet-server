@@ -24,10 +24,19 @@ exports.getCustomerById = async (req, res, next) => {
 
 // create customer
 exports.createCustomer = async (req, res, next) => {
-	const data = req.body;
 	try {
+		const io = req.io;
+		const user = req.user;
+		const data = req.body;
+
 		const { insertId } = await Customer.createCustomer(data);
 		const customer = await Customer.getCustomerById(insertId);
+
+		console.log(user);
+
+		// emit socket
+		io.emit("customerCreated", [customer, user]);
+
 		res.status(201).json({
 			message: "Customer created successfully",
 			customer,
@@ -39,11 +48,17 @@ exports.createCustomer = async (req, res, next) => {
 
 // update customer
 exports.updateCustomer = async (req, res, next) => {
-	const id = req.params.id;
-	const data = req.body;
 	try {
-		const result = await Customer.updateCustomer(id, data);
+		const io = req.io;
+		const user = req.user;
+		const id = req.params.id;
+		const data = req.body;
+		await Customer.updateCustomer(id, data);
 		const customer = await Customer.getCustomerById(id);
+
+		// emit socket
+		io.emit("customerUpdated", [customer, user]);
+
 		res.status(201).json({
 			message: "Customer updated successfully",
 			customer,
@@ -55,9 +70,16 @@ exports.updateCustomer = async (req, res, next) => {
 
 // delete customer
 exports.deleteCustomer = async (req, res, next) => {
-	const id = req.params.id;
 	try {
-		const result = await Customer.deleteCustomer(id);
+		const io = req.io;
+		const user = req.user;
+		const id = req.params.id;
+		const customer = await Customer.getCustomerById(id);
+		await Customer.deleteCustomer(id);
+
+		// emit socket
+		io.emit("customerDeleted", [customer, user]);
+
 		res.status(201).json({ message: "Customer deleted successfully" });
 	} catch (error) {
 		next(error);

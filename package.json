@@ -1,6 +1,6 @@
 {
   "name": "server",
-  "version": "2.11.2",
+  "version": "2.11.3",
   "description": "Server for vet app",
   "main": "app.js",
   "scripts": {
