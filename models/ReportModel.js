@@ -1,4 +1,5 @@
 const pool = require("../config/database");
+const moment = require("moment");
 
 class ReportModel {
 	// get revenue
@@ -197,6 +198,17 @@ class ReportModel {
 
 	// get product history
 	static async getProductHistory(startDate, endDate, id, searchBy) {
+		console.log("called");
+
+		console.log(startDate);
+		console.log(endDate);
+
+		// moment.tz.setDefault("Asia/Beirut");
+		startDate = moment(startDate).format(`YYYY-MM-DD HH:mm:ss`);
+		endDate = moment(endDate).format(`YYYY-MM-DD 23:59:59`);
+
+		console.log(startDate);
+		console.log(endDate);
 		let query = `
 		SELECT
 			p.product_name,
@@ -233,8 +245,6 @@ class ReportModel {
 		AND so.is_deleted = 0
 		AND DATE(so.order_datetime) BETWEEN ? AND ?
 		ORDER BY so.order_datetime DESC`;
-
-		console.log(query);
 
 		let [results] = await pool.query(query, [id, startDate, endDate]);
 		return results;
