@@ -17,55 +17,70 @@ class BalanceModel {
 	// get cash transaction history
 	static async getCashTransactions(start, end) {
 		const [_531] = await Accounts.getIdByAccountNumber("531");
-		let query = `WITH partner_balance AS (
-            SELECT
-                SUM(CASE WHEN ji.debit IS NOT NULL THEN ji.debit ELSE 0 END) AS debit,
-                SUM(CASE WHEN ji.credit IS NOT NULL THEN ji.credit ELSE 0 END) AS credit
-            FROM
-                journal_items ji
-            INNER JOIN
-                journal_vouchers jv ON ji.journal_id_fk = jv.journal_id
-            WHERE
-                ji.account_id_fk = ?
-                AND Date(jv.journal_date) < ?
-                AND ji.is_deleted = 0
-        )
-        SELECT
-            NULL AS journal_date,
-            NULL AS journal_datetime,
-            NULL AS journal_number,
-            'Initial Balance' AS journal_description,
-            COALESCE(pb.debit, 0) AS debit,
-            COALESCE(pb.credit, 0) AS credit,
-            NULL AS currency,
-            NULL AS exchange_value,
-            COALESCE(pb.debit, 0) - COALESCE(pb.credit, 0) AS balance
-        FROM
-            partner_balance pb
 
-        UNION
-        (
-        SELECT
-        DATE(jv.journal_date) AS journal_date,
-        jv.journal_date AS journal_datetime,
-        jv.journal_number,
-        jv.journal_description,
-        ji.debit,
-        ji.credit,
-        ji.currency,
-        ji.exchange_value,
-        NULL AS balance
-        FROM
-        journal_items ji
-        INNER JOIN
-        journal_vouchers jv ON jv.journal_id = ji.journal_id_fk
-        WHERE
-        ji.account_id_fk  = ?
-        AND DATE(jv.journal_date) BETWEEN ? AND ?
-        AND ji.is_deleted = 0
-        )
-        ORDER BY
-        journal_datetime ASC`;
+		const query = `
+			WITH partner_balance AS (
+				SELECT
+					SUM(COALESCE(ji.debit, 0)) AS debit,
+					SUM(COALESCE(ji.credit, 0)) AS credit
+				FROM journal_items ji
+				INNER JOIN journal_vouchers jv ON ji.journal_id_fk = jv.journal_id
+				WHERE
+					ji.account_id_fk = ?
+					AND DATE(jv.journal_date) < ?
+					AND ji.is_deleted = 0
+					
+			),
+			all_entries AS (
+				-- Initial Balance
+				SELECT
+					0 AS ordering,
+					NULL AS journal_date,
+					NULL AS journal_datetime,
+					NULL AS journal_number,
+					'Initial Balance' AS journal_description,
+					COALESCE(pb.debit, 0) AS debit,
+					COALESCE(pb.credit, 0) AS credit,
+					NULL AS currency,
+					NULL AS exchange_value
+				FROM partner_balance pb
+
+				UNION ALL
+
+				-- Journal entries
+				SELECT
+					1 AS ordering,
+					DATE(jv.journal_date) AS journal_date,
+					jv.journal_date AS journal_datetime,
+					jv.journal_number,
+					jv.journal_description,
+					COALESCE(ji.debit, 0) AS debit,
+					COALESCE(ji.credit, 0) AS credit,
+					ji.currency,
+					ji.exchange_value
+				FROM journal_items ji
+				INNER JOIN journal_vouchers jv ON jv.journal_id = ji.journal_id_fk
+				WHERE
+					ji.account_id_fk = ?
+					AND DATE(jv.journal_date) BETWEEN ? AND ?
+					AND ji.is_deleted = 0
+					
+			)
+			SELECT
+				journal_date,
+				journal_datetime,
+				journal_number,
+				journal_description,
+				debit,
+				credit,
+				currency,
+				exchange_value,
+				SUM(debit - credit) OVER (
+					ORDER BY ordering, journal_datetime
+					ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+				) AS balance
+			FROM all_entries
+			ORDER BY ordering, journal_datetime;`;
 
 		const [rows] = await pool.query(query, [
 			_531.id,
