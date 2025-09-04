@@ -1,5 +1,6 @@
 const pool = require("../config/database");
 const Accounts = require("./AccountsModel");
+const History = require("./HistoryModel");
 // const moment = require("moment");
 const moment = require("moment-timezone");
 
@@ -243,10 +244,12 @@ class SellOrders {
 			let order_id = order.order_id;
 
 			//check existing order for user
-			let [[orderCheck]] = await connection.query(
-				`SELECT * FROM sales_orders WHERE order_id = ?`,
-				[order_id]
-			);
+			// let [[orderCheck]] = await connection.query(
+			// 	`SELECT * FROM sales_orders WHERE order_id = ?`,
+			// 	[order_id]
+			// );
+			let orderCheck = await History.fetchSaleHistoryById(order_id);
+
 			if (!orderCheck) throw new Error("Order not found");
 
 			// check journal item record for account number 2 that check if order was debt or normal
@@ -383,6 +386,9 @@ class SellOrders {
 				`YYYY-MM-DD HH:mm`
 			);
 
+			// order.order_datetime = orderCheck.order_datetime;
+			order.updated_at = moment().format(`YYYY-MM-DD HH:mm:ss`);
+
 			// fix invoice number
 			order.invoice_number = `INV${order.invoice_number.padStart(
 				4,
@@ -427,6 +433,20 @@ class SellOrders {
 				[invoice_map]
 			);
 
+			// // add old order to sales_edits
+			// let [orderItems] = await connection.query(
+			// 	`SELECT * FROM sales_order_items WHERE order_id = ?`,
+			// 	[orderCheck.order_id]
+			// );
+
+			orderCheck.items = JSON.stringify(orderCheck.items);
+			orderCheck.updated_at = moment().format("YYYY-MM-DD HH:mm:ss");
+			orderCheck.update_reason = order.update_reason;
+			delete orderCheck.deleted_at;
+			delete orderCheck.delete_reason;
+
+			await connection.query(`INSERT INTO sales_edits SET ?`, orderCheck);
+
 			await connection.commit();
 			return new_order.insertId;
 		} catch (error) {
@@ -438,7 +458,7 @@ class SellOrders {
 	}
 
 	// delete invoice
-	static async deleteOrder(order_id) {
+	static async deleteOrder(order_id, message) {
 		const connection = await pool.getConnection();
 		try {
 			await connection.beginTransaction();
@@ -451,9 +471,8 @@ class SellOrders {
 			);
 			if (!orderCheck) throw new Error("Order not found");
 
-			// add deleted items to inventory transactions
 			await connection.query(
-				`INSERT INTO inventory_transactions (product_id_fk, transaction_type, quantity) SELECT product_id, 'DELETE', quantity FROM sales_order_items WHERE order_id = ?`,
+				`DELETE FROM inventory_transactions WHERE order_id_fk = ? AND transaction_type = 'SALE'`,
 				[order_id]
 			);
 
@@ -477,8 +496,12 @@ class SellOrders {
 			await connection.query(deleteItemsQuery, order_id);
 
 			// delete old invoice
-			let deleteOrderQuery = `UPDATE sales_orders SET is_deleted = 1 WHERE order_id = ?`;
-			await connection.query(deleteOrderQuery, order_id);
+			let deleteOrderQuery = `UPDATE sales_orders SET is_deleted = 1, deleted_at = ?, delete_reason = ? WHERE order_id = ?`;
+			await connection.query(deleteOrderQuery, [
+				moment().format("YYYY-MM-DD HH:mm:ss"),
+				message,
+				order_id,
+			]);
 
 			await connection.commit();
 		} catch (error) {

@@ -1,5 +1,6 @@
 const History = require("../models/HistoryModel");
 
+// sales history
 exports.fetchSalesHistory = async (req, res, next) => {
 	try {
 		let criteria = req.body;
@@ -10,6 +11,18 @@ exports.fetchSalesHistory = async (req, res, next) => {
 	}
 };
 
+// edits history
+exports.fetchEditHistory = async (req, res, next) => {
+	try {
+		const { id } = req.params;
+		const data = await History.fetchEditHistory(id);
+		res.status(200).send(data);
+	} catch (error) {
+		next(error);
+	}
+};
+
+// deleted history
 exports.fetchDeletedHistory = async (req, res, next) => {
 	try {
 		let criteria = req.body;

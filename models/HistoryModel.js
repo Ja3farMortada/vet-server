@@ -42,6 +42,31 @@ class History {
 		return rows;
 	}
 
+	// fetch invoice history by id
+	static async fetchSaleHistoryById(id) {
+		let query = `SELECT
+            O.*,
+            JSON_ARRAYAGG(JSON_OBJECT('order_item_id', M.order_item_id, 'product_id', M.product_id, 'product_name', S.product_name, 'variant_id', M.variant_id, 'expiry_date', V.expiry_date, 'barcode', S.barcode, 'quantity', M.quantity, 'price_type', M.price_type, 'original_price', M.original_price, 'discount_percentage', M.discount_percentage, 'unit_cost', M.unit_cost, 'unit_price', M.unit_price, 'total_price', M.total_price)) items
+            FROM sales_orders O
+            INNER JOIN sales_order_items M ON O.order_id = M.order_id
+            INNER JOIN products S ON S.product_id = M.product_id
+			LEFT JOIN products_variants V ON M.variant_id = V.variant_id
+            WHERE O.is_deleted = 0
+			AND O.order_id = ?`;
+
+		const [[rows]] = await pool.query(query, id);
+		return rows;
+	}
+
+	// fetch edit history
+	static async fetchEditHistory(id) {
+		const query = `SELECT * FROM sales_edits WHERE order_id = ? ORDER BY updated_at DESC`;
+
+		const [rows] = await pool.query(query, [id]);
+
+		return rows;
+	}
+
 	// fetch sales invoices
 	static async fetchDeletedHistory(criteria) {
 		let sql = `SELECT
@@ -73,7 +98,7 @@ class History {
 		}
 
 		sql += ` GROUP BY O.order_id
-        ORDER BY order_date DESC, O.invoice_number DESC
+        ORDER BY O.deleted_at DESC
         LIMIT ? OFFSET ?`;
 		params.push(criteria.limit || 100);
 		params.push(criteria.offset || 0);

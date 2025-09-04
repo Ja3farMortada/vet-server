@@ -12,6 +12,8 @@ class Expense {
         jv.journal_description,
         jv.journal_date as payment_date,
         jv.total_value,
+		jv.updated_at,
+		jv.update_reason,
         ji.account_id_fk
 
         FROM journal_vouchers jv
@@ -20,6 +22,7 @@ class Expense {
 
         WHERE jv.journal_number LIKE 'EXP%'
         AND ji.is_deleted = 0
+		AND jv.is_deleted = 0
         AND ji.account_id_fk != ?
         ORDER BY jv.journal_date DESC`;
 		const [expenses] = await pool.query(query, [_531.id]);
@@ -102,6 +105,8 @@ class Expense {
 			connection.release();
 		}
 	}
+
+	// update expense
 	static async updateExpense(paymentData) {
 		const connection = await pool.getConnection();
 		try {
@@ -112,12 +117,20 @@ class Expense {
 				`YYYY-MM-DD HH:mm:ss`
 			);
 
+			const [[voucherCheck]] = await connection.query(
+				`SELECT * FROM journal_vouchers WHERE journal_id = ?`,
+				[paymentData.journal_id]
+			);
+
+			if (!voucherCheck) throw new Error("Voucher not found");
+
 			// update journal vouchers and journal items
-			let query = `UPDATE journal_vouchers SET journal_date = ?, journal_description = ?,  total_value = ? WHERE journal_id = ?`;
-			const [journal_voucher] = await connection.query(query, [
+			let query = `UPDATE journal_vouchers SET journal_date = ?, journal_description = ?,  total_value = ?, updated_at = ? WHERE journal_id = ?`;
+			await connection.query(query, [
 				paymentData.payment_date,
 				paymentData.journal_description,
 				paymentData.amount,
+				moment().format("YYYY-MM-DD HH:mm:ss"),
 				paymentData.journal_id,
 			]);
 
@@ -145,6 +158,17 @@ class Expense {
 				]
 			);
 
+			voucherCheck.updated_at = moment().format("YYYY-MM-DD HH:mm:ss");
+			voucherCheck.update_reason = paymentData.update_reason;
+
+			delete voucherCheck.deleted_at;
+			delete voucherCheck.delete_reason;
+
+			await connection.query(
+				`INSERT INTO expenses_edits SET ?`,
+				voucherCheck
+			);
+
 			await connection.commit();
 		} catch (error) {
 			await connection.rollback();
@@ -153,19 +177,21 @@ class Expense {
 			connection.release();
 		}
 	}
-	static async deleteExpense(journal_id) {
+
+	// delete expense
+	static async deleteExpense(journal_id, message) {
 		const connection = await pool.getConnection();
 		try {
 			await connection.beginTransaction();
 
 			await connection.query(
-				`DELETE FROM journal_items WHERE journal_id_fk = ?`,
+				`UPDATE journal_items SET is_deleted = 0 WHERE journal_id_fk = ?`,
 				journal_id
 			);
 
 			await connection.query(
-				`DELETE FROM journal_vouchers WHERE journal_id = ?`,
-				journal_id
+				`UPDATE journal_vouchers SET is_deleted = 1, deleted_at = ?, delete_reason = ? WHERE journal_id = ?`,
+				[moment().format("YYYY-MM-DD HH:mm:ss"), message, journal_id]
 			);
 
 			await connection.commit();
@@ -175,6 +201,42 @@ class Expense {
 		} finally {
 			connection.release();
 		}
+	}
+
+	// fetch edit history
+	static async fetchEditHistory(id) {
+		const query = `SELECT * FROM expenses_edits WHERE journal_id = ? ORDER BY updated_at DESC`;
+
+		const [rows] = await pool.query(query, [id]);
+
+		return rows;
+	}
+
+	// fetch deleted history
+	static async fetchDeletedHistory() {
+		const [_531] = await Accounts.getIdByAccountNumber("531");
+		const query = `SELECT
+        jv.journal_id,
+        jv.journal_number,
+        jv.journal_description,
+        jv.journal_date as payment_date,
+        jv.total_value,
+		jv.updated_at,
+		jv.update_reason,
+		jv.deleted_at,
+		jv.delete_reason,
+        ji.account_id_fk
+
+        FROM journal_vouchers jv
+
+        INNER JOIN journal_items ji ON jv.journal_id = ji.journal_id_fk
+
+        WHERE jv.journal_number LIKE 'EXP%'
+		AND jv.is_deleted = 1
+        AND ji.account_id_fk != ?
+        ORDER BY jv.journal_date DESC`;
+		const [expenses] = await pool.query(query, [_531.id]);
+		return expenses;
 	}
 }
 

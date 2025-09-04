@@ -5,6 +5,7 @@ const HistoryController = require("../controllers/HistoryController");
 
 router.post("/sales/search", HistoryController.fetchSalesHistory);
 router.post("/deleted/search", HistoryController.fetchDeletedHistory);
+router.get("/edits/:id", HistoryController.fetchEditHistory);
 router.post("/payment/search", HistoryController.fetchPaymentHistory);
 router.post(
 	"/money-transfer/search",

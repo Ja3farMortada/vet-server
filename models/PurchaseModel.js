@@ -482,8 +482,14 @@ class PurchaseOrders {
 			if (!orderCheck) throw new Error("Order not found");
 
 			// add deleted items to inventory transactions
+			// await connection.query(
+			// 	`INSERT INTO inventory_transactions (product_id_fk, transaction_type, quantity, order_id_fk, transaction_notes) SELECT product_id_fk, 'DELETE', -quantity, order_id_fk, '${orderCheck.invoice_number}' FROM purchase_order_items WHERE order_id_fk = ?`,
+			// 	[order_id]
+			// );
+
+			// delete from inventory transactions
 			await connection.query(
-				`INSERT INTO inventory_transactions (product_id_fk, transaction_type, quantity, order_id_fk, transaction_notes) SELECT product_id_fk, 'DELETE', -quantity, order_id_fk, '${orderCheck.invoice_number}' FROM purchase_order_items WHERE order_id_fk = ?`,
+				`DELETE FROM inventory_transactions WHERE order_id_fk = ? AND transaction_type = 'SUPPLY'`,
 				[order_id]
 			);
 
