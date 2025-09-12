@@ -8,7 +8,9 @@ class BalanceModel {
 		const [_531] = await Accounts.getIdByAccountNumber("531");
 		const query = `SELECT COALESCE(sum(debit) - sum(credit),0) AS balance
         FROM journal_items ji
-        where ji.is_deleted =0
+		INNER JOIN journal_vouchers jv ON ji.journal_id_fk = jv.journal_id
+        WHERE ji.is_deleted = 0
+		AND jv.is_deleted = 0
         AND ji.account_id_fk= ?`;
 		const [[rows]] = await pool.query(query, [_531.id]);
 		return rows;
