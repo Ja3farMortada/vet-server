@@ -29,7 +29,7 @@ class BalanceModel {
 					ji.account_id_fk = ?
 					AND DATE(jv.journal_date) < ?
 					AND ji.is_deleted = 0
-					
+					AND jv.is_deleted = 0
 			),
 			all_entries AS (
 				-- Initial Balance
@@ -64,7 +64,7 @@ class BalanceModel {
 					ji.account_id_fk = ?
 					AND DATE(jv.journal_date) BETWEEN ? AND ?
 					AND ji.is_deleted = 0
-					
+					AND jv.is_deleted = 0
 			)
 			SELECT
 				journal_date,
