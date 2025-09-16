@@ -403,6 +403,25 @@ class Product {
 		);
 		return rows;
 	}
+
+	// generate barcode
+	static async generateBarcode() {
+		let generatedBarcode = "9"; // prefix number 9 to keep record of manually generated barcodes
+		for (let i = 0; i < 11; i++) {
+			generatedBarcode += Math.floor(Math.random() * 10); // Append a random digit
+		}
+
+		const [[barcodeExist]] = await pool.query(
+			`SELECT barcode FROM products WHERE barcode = ?`,
+			generatedBarcode
+		);
+
+		if (barcodeExist) {
+			this.generateBarcode();
+		} else {
+			return generatedBarcode;
+		}
+	}
 }
 
 module.exports = Product;

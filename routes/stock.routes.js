@@ -40,4 +40,6 @@ router.post("/variants", VariantsController.createVariant);
 router.put("/variants", VariantsController.updateVariant);
 router.delete("/variants/:id", VariantsController.deleteVariant);
 
+router.get("/generate-barcode", ProductController.generateBarcode);
+
 module.exports = router;
