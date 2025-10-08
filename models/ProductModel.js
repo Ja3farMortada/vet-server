@@ -323,7 +323,7 @@ class Product {
 				unit_price_usd: data.unit_price_usd,
 				product_notes: data.product_notes,
 				stock_management: data.stock_management,
-				has_variants: data.has_variants,
+				has_variants: data.has_variants || false,
 			};
 
 			// update product table
