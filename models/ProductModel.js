@@ -1,4 +1,5 @@
 const pool = require("../config/database");
+const moment = require("moment-timezone");
 
 class Product {
 	// get all products
@@ -380,6 +381,10 @@ class Product {
 		if (!data.variant_id) {
 			delete data.variant_id;
 		}
+
+		moment.tz.setDefault("Asia/Beirut");
+
+		data.transaction_datetime = moment().format(`YYYY-MM-DD HH:mm:ss`);
 
 		let query = `INSERT INTO inventory_transactions SET ?`;
 		await pool.query(query, data);
