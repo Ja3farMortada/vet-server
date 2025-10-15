@@ -391,12 +391,27 @@ class Product {
 	}
 
 	static async getHistoryById(id) {
+		// const query = `SELECT
+		// T.*,
+		// V.expiry_date
+		// FROM inventory_transactions T
+		// LEFT JOIN products_variants V ON V.variant_id = T.variant_id
+		// WHERE T.product_id_fk = ? AND T.is_deleted = 0 ORDER BY T.transaction_datetime DESC LIMIT 100`;
+
 		const query = `SELECT
-		T.*,
-		V.expiry_date
-		FROM inventory_transactions T
-		LEFT JOIN products_variants V ON V.variant_id = T.variant_id
-		WHERE T.product_id_fk = ? AND T.is_deleted = 0 ORDER BY T.transaction_datetime DESC LIMIT 100`;
+			T.*,
+			V.expiry_date,
+			SUM(T.quantity) OVER (
+				PARTITION BY T.product_id_fk
+				ORDER BY T.transaction_datetime
+				ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+			) AS balance
+			FROM inventory_transactions T
+			LEFT JOIN products_variants V ON V.variant_id = T.variant_id
+			WHERE T.product_id_fk = ?
+			AND T.is_deleted = 0
+			ORDER BY T.transaction_datetime DESC
+			LIMIT 10000;`;
 		let [rows] = await pool.query(query, id);
 		return rows;
 	}
