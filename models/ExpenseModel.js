@@ -10,6 +10,7 @@ class Expense {
         jv.journal_id,
         jv.journal_number,
         jv.journal_description,
+		jv.journal_notes,
         jv.journal_date as payment_date,
         jv.total_value,
 		jv.updated_at,
@@ -53,11 +54,12 @@ class Expense {
 			let payment_number = `EXP${number.toString().padStart(4, "0")}`;
 
 			//insert to vouchers and journal_items
-			let query = `INSERT INTO journal_vouchers (journal_number, journal_date, journal_description, total_value) VALUES (?, ?, ?, ?)`;
+			let query = `INSERT INTO journal_vouchers (journal_number, journal_date, journal_description, journal_notes, total_value) VALUES (?, ?, ?, ?, ?)`;
 			const [journal_voucher] = await connection.query(query, [
 				payment_number,
 				paymentData.payment_date,
 				paymentData.journal_description,
+				paymentData.journal_notes,
 				paymentData.amount,
 			]);
 
@@ -125,10 +127,11 @@ class Expense {
 			if (!voucherCheck) throw new Error("Voucher not found");
 
 			// update journal vouchers and journal items
-			let query = `UPDATE journal_vouchers SET journal_date = ?, journal_description = ?,  total_value = ?, updated_at = ? WHERE journal_id = ?`;
+			let query = `UPDATE journal_vouchers SET journal_date = ?, journal_description = ?, journal_notes = ?,  total_value = ?, updated_at = ? WHERE journal_id = ?`;
 			await connection.query(query, [
 				paymentData.payment_date,
 				paymentData.journal_description,
+				paymentData.journal_notes,
 				paymentData.amount,
 				moment().format("YYYY-MM-DD HH:mm:ss"),
 				paymentData.journal_id,
@@ -219,6 +222,7 @@ class Expense {
         jv.journal_id,
         jv.journal_number,
         jv.journal_description,
+		jv.journal_notes,
         jv.journal_date as payment_date,
         jv.total_value,
 		jv.updated_at,
