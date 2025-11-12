@@ -82,3 +82,15 @@ exports.fetchReceiptHistory = async (req, res, next) => {
 		next(error);
 	}
 };
+
+// fetch products history
+exports.fetchProductsSalesHistory = async (req, res, next) => {
+	try {
+		const criteria = req.body;
+
+		const data = await History.fetchProductsSalesHistory(criteria);
+		res.status(200).send(data);
+	} catch (error) {
+		next(error);
+	}
+};

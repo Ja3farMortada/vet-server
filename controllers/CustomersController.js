@@ -126,3 +126,13 @@ exports.getCustomerTotalBalance = async (req, res, next) => {
 		next(error);
 	}
 };
+
+exports.fetchCustomerPets = async (req, res, next) => {
+	const { customer_id } = req.params;
+	try {
+		const pets = await Customer.getCustomerPets(customer_id);
+		res.status(200).send(pets);
+	} catch (error) {
+		next(error);
+	}
+};

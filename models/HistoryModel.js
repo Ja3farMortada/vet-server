@@ -11,12 +11,14 @@ class History {
             A.financial_number,
             O.*,
             O.order_datetime AS order_date,
+			P.pet_name,
             JSON_ARRAYAGG(JSON_OBJECT('order_item_id', M.order_item_id, 'product_id', M.product_id, 'product_name', S.product_name, 'variant_id', M.variant_id, 'expiry_date', V.expiry_date, 'barcode', S.barcode, 'quantity', M.quantity, 'price_type', M.price_type, 'original_price', M.original_price, 'discount_percentage', M.discount_percentage, 'unit_cost', M.unit_cost, 'unit_price', M.unit_price, 'total_price', M.total_price)) items
             FROM sales_orders O
             INNER JOIN sales_order_items M ON O.order_id = M.order_id
             INNER JOIN products S ON S.product_id = M.product_id
 			LEFT JOIN products_variants V ON M.variant_id = V.variant_id
             LEFT JOIN accounts  A ON O.customer_id = A.account_id
+			LEFT JOIN pets P ON P.pet_id = O.pet_id
             WHERE O.is_deleted = 0`;
 		const params = [];
 		if (criteria.invoice_number) {
@@ -254,6 +256,46 @@ class History {
 		LIMIT ? OFFSET ?`;
 		params.push(criteria.limit || 100);
 		params.push(criteria.offset || 0);
+
+		const [rows] = await pool.query(sql, params);
+		return rows;
+	}
+
+	// fetch products sales history
+	static async fetchProductsSalesHistory(criteria) {
+		let sql = `SELECT soi.*,
+			p.sku,
+			p.product_name,
+			a.name AS customer_name,
+			so.invoice_number,
+			so.order_datetime,
+			pe.pet_name
+		FROM sales_order_items soi 
+			INNER JOIN sales_orders so ON soi.order_id = so.order_id
+			INNER JOIN products p ON soi.product_id = p.product_id
+			INNER JOIN accounts a ON so.customer_id = a.account_id
+			LEFT JOIN pets pe ON so.pet_id = pe.pet_id
+			WHERE soi.is_deleted = 0`;
+		const params = [];
+		if (criteria.customer_id) {
+			sql += ` AND so.customer_id = ?`;
+			params.push(criteria.customer_id);
+		}
+		if (criteria.product_id) {
+			sql += ` AND soi.product_id = ?`;
+			params.push(criteria.product_id);
+		}
+		if (criteria.invoice_number) {
+			sql += ` AND so.invoice_number LIKE ?`;
+			params.push(`%${criteria.invoice_number}%`);
+		}
+		if (criteria.invoice_date) {
+			sql += ` AND DATE(order_datetime) = ?`;
+			params.push(moment(criteria.invoice_date).format("yyyy-MM-DD"));
+		}
+
+		sql += ` ORDER BY order_datetime DESC`;
+		params.push(criteria.limit || 1000);
 
 		const [rows] = await pool.query(sql, params);
 		return rows;

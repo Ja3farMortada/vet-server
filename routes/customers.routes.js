@@ -22,7 +22,6 @@ router.get(
 );
 router.get("/:id/balance", CustomersController.getCustomerTotalBalance);
 
-//admin routes
-// router.use(admin);
+router.get("/pets/:customer_id", CustomersController.fetchCustomerPets);
 
 module.exports = router;

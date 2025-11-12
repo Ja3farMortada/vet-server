@@ -134,6 +134,12 @@ class Customer {
 		const [[result]] = await pool.query(query, [account_id]);
 		return result;
 	}
+
+	static async getCustomerPets(id) {
+		const query = `SELECT * FROM pets WHERE customer_id_fk = ? AND is_deleted = 0`;
+		const [pets] = await pool.query(query, [id]);
+		return pets;
+	}
 }
 
 module.exports = Customer;
