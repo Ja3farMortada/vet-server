@@ -408,6 +408,8 @@ class SellOrders {
 			);
 
 			order.exchange_rate = orderCheck.exchange_rate;
+			order.pet_id = orderCheck.pet_id;
+
 			// insert query
 			await connection.query(`INSERT INTO sales_orders SET ?`, order);
 
