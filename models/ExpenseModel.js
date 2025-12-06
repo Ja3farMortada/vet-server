@@ -34,12 +34,12 @@ class Expense {
 
     if (start_date) {
       query += ` AND jv.journal_date >= ?`;
-      params.push(start_date);
+      params.push(moment(start_date).format("yyyy-MM-DD"));
     }
 
     if (end_date) {
       query += ` AND jv.journal_date <= ?`;
-      params.push(end_date);
+      params.push(moment(end_date).format("yyyy-MM-DD"));
     }
 
     query += ` AND ji.is_deleted = 0
