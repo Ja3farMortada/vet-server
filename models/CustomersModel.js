@@ -1,63 +1,68 @@
 const pool = require("../config/database");
+const moment = require("moment-timezone");
 
 class Customer {
-	// get customers
-	static async getAllCustomers() {
-		const [result] = await pool.query(
-			"SELECT * FROM accounts WHERE is_customer = 1 AND is_deleted = 0"
-		);
-		return result;
-	}
+    // get customers
+    static async getAllCustomers() {
+        const [result] = await pool.query(
+            "SELECT * FROM accounts WHERE is_customer = 1 AND is_deleted = 0"
+        );
+        return result;
+    }
 
-	// get customer by id
-	static async getCustomerById(id) {
-		const [[result]] = await pool.query(
-			"SELECT * FROM accounts WHERE account_id = ? AND is_customer = 1 AND is_deleted = 0",
-			[id]
-		);
-		return result;
-	}
+    // get customer by id
+    static async getCustomerById(id) {
+        const [[result]] = await pool.query(
+            "SELECT * FROM accounts WHERE account_id = ? AND is_customer = 1 AND is_deleted = 0",
+            [id]
+        );
+        return result;
+    }
 
-	// create customer
-	static async createCustomer(data, connection = null) {
-		data.is_customer = 1;
-		if (connection) {
-			const [result] = await connection.query(
-				"INSERT INTO accounts SET ?",
-				data
-			);
-			return result;
-		} else {
-			const [result] = await pool.query(
-				"INSERT INTO accounts SET ?",
-				data
-			);
-			return result;
-		}
-	}
+    // create customer
+    static async createCustomer(data, connection = null) {
+        data.is_customer = 1;
+        if (connection) {
+            const [result] = await connection.query(
+                "INSERT INTO accounts SET ?",
+                data
+            );
+            return result;
+        } else {
+            const [result] = await pool.query(
+                "INSERT INTO accounts SET ?",
+                data
+            );
+            return result;
+        }
+    }
 
-	// update customer
-	static async updateCustomer(id, data) {
-		const [result] = await pool.query(
-			"UPDATE accounts SET ? WHERE account_id = ? AND is_customer = 1 AND is_deleted = 0",
-			[data, id]
-		);
-		return result;
-	}
+    // update customer
+    static async updateCustomer(id, data) {
+        const [result] = await pool.query(
+            "UPDATE accounts SET ? WHERE account_id = ? AND is_customer = 1 AND is_deleted = 0",
+            [data, id]
+        );
+        return result;
+    }
 
-	// delete customer
-	static async deleteCustomer(id) {
-		const [result] = await pool.query(
-			"UPDATE accounts SET is_deleted = 1 WHERE account_id = ? AND is_customer = 1",
-			[id]
-		);
-		return result;
-	}
+    // delete customer
+    static async deleteCustomer(id) {
+        const [result] = await pool.query(
+            "UPDATE accounts SET is_deleted = 1 WHERE account_id = ? AND is_customer = 1",
+            [id]
+        );
+        return result;
+    }
 
-	// get customers debts
+    // get customers debts
 
-	static async getCustomerDebts() {
-		let query = `SELECT
+    static async getCustomerDebts(start_date, end_date) {
+        moment.tz.setDefault("Asia/Beirut");
+        start_date = moment(start_date).format("YYYY-MM-DD");
+        end_date = moment(end_date).format("YYYY-MM-DD");
+
+        let query = `SELECT
 					a.account_id,
 					a.name,
 					a.phone,
@@ -71,25 +76,25 @@ class Customer {
 					
 				WHERE
 					ji.is_deleted = 0 
-
-				AND a.is_customer = 1
+					AND DATE(jv.journal_date) BETWEEN ? AND ?
+					AND a.is_customer = 1
 				GROUP BY ji.partner_id_fk
 
 				HAVING balance != 0
 				ORDER BY balance DESC`;
-		const [result] = await pool.query(query);
+        const [result] = await pool.query(query, [start_date, end_date]);
 
-		return result;
-	}
+        return result;
+    }
 
-	//////////////////////////////////
-	//customer model related to user//
-	//////////////////////////////////
+    //////////////////////////////////
+    //customer model related to user//
+    //////////////////////////////////
 
-	//get customer latest purchases
-	static async getCustomerLatestPurchases(account_id) {
-		const [result] = await pool.query(
-			`  SELECT
+    //get customer latest purchases
+    static async getCustomerLatestPurchases(account_id) {
+        const [result] = await pool.query(
+            `  SELECT
             customer_id,
             product_id,
             order_id,
@@ -116,13 +121,13 @@ class Customer {
             ) ranked_purchases
             WHERE
                 purchase_rank <= 1;`,
-			[account_id]
-		);
-		return result;
-	}
+            [account_id]
+        );
+        return result;
+    }
 
-	static async getCustomerTotalBalance(account_id) {
-		const query = `SELECT
+    static async getCustomerTotalBalance(account_id) {
+        const query = `SELECT
 					COALESCE(SUM(ji.debit) - SUM(ji.credit), 0) AS balance
 				FROM
 					journal_vouchers jv
@@ -131,15 +136,15 @@ class Customer {
 				WHERE
 					ji.partner_id_fk = ?
 					AND ji.is_deleted = 0`;
-		const [[result]] = await pool.query(query, [account_id]);
-		return result;
-	}
+        const [[result]] = await pool.query(query, [account_id]);
+        return result;
+    }
 
-	static async getCustomerPets(id) {
-		const query = `SELECT * FROM pets WHERE customer_id_fk = ? AND is_deleted = 0`;
-		const [pets] = await pool.query(query, [id]);
-		return pets;
-	}
+    static async getCustomerPets(id) {
+        const query = `SELECT * FROM pets WHERE customer_id_fk = ? AND is_deleted = 0`;
+        const [pets] = await pool.query(query, [id]);
+        return pets;
+    }
 }
 
 module.exports = Customer;
