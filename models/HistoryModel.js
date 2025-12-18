@@ -268,11 +268,11 @@ class History {
             params.push(criteria.partner_id);
         }
         if (criteria.start_date) {
-            sql += ` AND DATE(P.journal_date) = ?`;
+            sql += ` AND DATE(P.journal_date) >= ?`;
             params.push(moment(criteria.start_date).format("yyyy-MM-DD"));
         }
         if (criteria.end_date) {
-            sql += ` AND DATE(P.journal_date) = ?`;
+            sql += ` AND DATE(P.journal_date) <= ?`;
             params.push(moment(criteria.end_date).format("yyyy-MM-DD"));
         }
 
