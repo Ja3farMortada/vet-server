@@ -2,9 +2,9 @@ const pool = require("../config/database");
 const moment = require("moment");
 
 class ReportModel {
-	// get revenue
-	static async getRevenue(startDate, endDate) {
-		let query = ` WITH sales_summary AS (
+    // get revenue
+    static async getRevenue(startDate, endDate) {
+        let query = ` WITH sales_summary AS (
             SELECT
                 COALESCE(SUM(total_amount), 0) AS totalSale,
                 COALESCE(SUM(total_cost), 0) AS totalCost,
@@ -37,19 +37,19 @@ class ReportModel {
         FROM
             sales_summary sales
             CROSS JOIN return_summary returns;`;
-		let [[result]] = await pool.query(query, [
-			startDate,
-			endDate,
+        let [[result]] = await pool.query(query, [
+            startDate,
+            endDate,
 
-			startDate,
-			endDate,
-		]);
-		return result;
-	}
+            startDate,
+            endDate,
+        ]);
+        return result;
+    }
 
-	// get revenue by group
-	static async getGroupedRevenue(startDate, endDate) {
-		const query = `WITH shop_sales AS (
+    // get revenue by group
+    static async getGroupedRevenue(startDate, endDate) {
+        const query = `WITH shop_sales AS (
             SELECT SUM(total_price) AS shop_sales FROM sales_order_items SOI 
 				INNER JOIN sales_orders O ON SOI.order_id = O.order_id
 				INNER JOIN products P ON SOI.product_id = P.product_id
@@ -75,32 +75,32 @@ class ReportModel {
 				shop_sales
 				CROSS JOIN medical_sales;`;
 
-		let [[result]] = await pool.query(query, [
-			startDate,
-			endDate,
-			startDate,
-			endDate,
-		]);
-		return result;
-	}
+        let [[result]] = await pool.query(query, [
+            startDate,
+            endDate,
+            startDate,
+            endDate,
+        ]);
+        return result;
+    }
 
-	// get total expenses
-	static async getExpenses(startDate, endDate) {
-		let query = `SELECT
+    // get total expenses
+    static async getExpenses(startDate, endDate) {
+        let query = `SELECT
         SUM(debit) AS totalExpenses
         FROM journal_items
         WHERE DATE(journal_date) >= ?
         AND DATE(journal_date) <= ?
-        AND account_id_fk = 8;`;
+        AND account_id_fk = 8 AND is_deleted = 0;`;
 
-		let [[results]] = await pool.query(query, [startDate, endDate]);
+        let [[results]] = await pool.query(query, [startDate, endDate]);
 
-		return results;
-	}
+        return results;
+    }
 
-	// get total supplier payments
-	static async getSupplierPayments(startDate, endDate) {
-		let query = `SELECT
+    // get total supplier payments
+    static async getSupplierPayments(startDate, endDate) {
+        let query = `SELECT
         SUM(total_value) AS totalSupplierPayments
         FROM journal_vouchers
         WHERE DATE(journal_date) >= ?
@@ -108,14 +108,14 @@ class ReportModel {
         AND journal_number LIKE 'REC%'
 		AND is_deleted = 0`;
 
-		let [[results]] = await pool.query(query, [startDate, endDate]);
+        let [[results]] = await pool.query(query, [startDate, endDate]);
 
-		return results;
-	}
+        return results;
+    }
 
-	// get top sales
-	static async getTopSales(startDate, endDate, id) {
-		let query = `SELECT p.product_id, p.product_name AS item_name, c.category_name,
+    // get top sales
+    static async getTopSales(startDate, endDate, id) {
+        let query = `SELECT p.product_id, p.product_name AS item_name, c.category_name,
                 SUM(soi.quantity) AS count FROM sales_order_items soi
                 INNER JOIN products p  ON soi.product_id  = p.product_id
 				INNER JOIN products_categories c ON p.category_id_fk = c.category_id
@@ -126,18 +126,18 @@ class ReportModel {
                     AND DATE(so.order_datetime) <= ?
                     AND so.is_deleted = 0)`;
 
-		if (id != "null") {
-			query += ` AND p.product_id = ? `;
-		}
-		query += `GROUP BY p.product_id
+        if (id != "null") {
+            query += ` AND p.product_id = ? `;
+        }
+        query += `GROUP BY p.product_id
                 ORDER BY count DESC
                 LIMIT 10 `;
-		let [results] = await pool.query(query, [startDate, endDate, id]);
-		return results;
-	}
+        let [results] = await pool.query(query, [startDate, endDate, id]);
+        return results;
+    }
 
-	static async getTotalPayments(startDate, endDate) {
-		let query = `
+    static async getTotalPayments(startDate, endDate) {
+        let query = `
         SELECT
         COALESCE(sum(total_value), 0) as totalPayment
         FROM journal_vouchers P
@@ -145,12 +145,12 @@ class ReportModel {
         AND DATE(P.journal_date) BETWEEN ? AND ?
 
         AND journal_description = 'Payment';`;
-		let [[result]] = await pool.query(query, [startDate, endDate]);
-		return result;
-	}
+        let [[result]] = await pool.query(query, [startDate, endDate]);
+        return result;
+    }
 
-	static async getTopCategories(startDate, endDate) {
-		let query = `SELECT PC.category_name,
+    static async getTopCategories(startDate, endDate) {
+        let query = `SELECT PC.category_name,
         SUM(SOI.quantity) AS count FROM sales_orders SO
         INNER JOIN sales_order_items SOI ON SO.order_id = SOI.order_id
         
@@ -163,12 +163,12 @@ class ReportModel {
         ORDER BY count DESC
         LIMIT 10
     `;
-		let [results] = await pool.query(query, [startDate, endDate]);
-		return results;
-	}
-	// get stock value
-	static async getStockValue() {
-		const query = `SELECT
+        let [results] = await pool.query(query, [startDate, endDate]);
+        return results;
+    }
+    // get stock value
+    static async getStockValue() {
+        const query = `SELECT
             SUM((quantity * unit_cost_usd)) AS cost_value,
             SUM((quantity * unit_price_usd)) AS selling_value,
 		    SUM(quantity) AS total_quantity
@@ -191,25 +191,25 @@ class ReportModel {
 
             WHERE P.is_deleted = 0
             AND t.quantity > 0`;
-		let [[result]] = await pool.query(query);
+        let [[result]] = await pool.query(query);
 
-		return result;
-	}
+        return result;
+    }
 
-	// get product history
-	static async getProductHistory(startDate, endDate, id, searchBy) {
-		console.log("called");
+    // get product history
+    static async getProductHistory(startDate, endDate, id, searchBy) {
+        console.log("called");
 
-		console.log(startDate);
-		console.log(endDate);
+        console.log(startDate);
+        console.log(endDate);
 
-		// moment.tz.setDefault("Asia/Beirut");
-		startDate = moment(startDate).format(`YYYY-MM-DD HH:mm:ss`);
-		endDate = moment(endDate).format(`YYYY-MM-DD 23:59:59`);
+        // moment.tz.setDefault("Asia/Beirut");
+        startDate = moment(startDate).format(`YYYY-MM-DD HH:mm:ss`);
+        endDate = moment(endDate).format(`YYYY-MM-DD 23:59:59`);
 
-		console.log(startDate);
-		console.log(endDate);
-		let query = `
+        console.log(startDate);
+        console.log(endDate);
+        let query = `
 		SELECT
 			p.product_name,
 			c.category_name,
@@ -226,29 +226,29 @@ class ReportModel {
 			INNER JOIN sales_orders so ON so.order_id = soi.order_id 
 		WHERE `;
 
-		let queryKey = ``;
-		switch (searchBy) {
-			case "product":
-				queryKey = `p.product_id = ? `;
-				break;
-			case "category":
-				queryKey = `c.category_id = ? `;
-				break;
-			case "group":
-				queryKey = `g.group_id = ? `;
-				break;
-		}
+        let queryKey = ``;
+        switch (searchBy) {
+            case "product":
+                queryKey = `p.product_id = ? `;
+                break;
+            case "category":
+                queryKey = `c.category_id = ? `;
+                break;
+            case "group":
+                queryKey = `g.group_id = ? `;
+                break;
+        }
 
-		query += queryKey;
+        query += queryKey;
 
-		query += `AND soi.is_deleted = 0 
+        query += `AND soi.is_deleted = 0 
 		AND so.is_deleted = 0
 		AND DATE(so.order_datetime) BETWEEN ? AND ?
 		ORDER BY so.order_datetime DESC`;
 
-		let [results] = await pool.query(query, [id, startDate, endDate]);
-		return results;
-	}
+        let [results] = await pool.query(query, [id, startDate, endDate]);
+        return results;
+    }
 }
 
 module.exports = ReportModel;
