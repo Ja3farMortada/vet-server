@@ -86,12 +86,13 @@ class ReportModel {
 
     // get total expenses
     static async getExpenses(startDate, endDate) {
-        let query = `SELECT
-        SUM(debit) AS totalExpenses
-        FROM journal_items
-        WHERE DATE(journal_date) >= ?
-        AND DATE(journal_date) <= ?
-        AND account_id_fk = 8 AND is_deleted = 0;`;
+        // let query = `SELECT
+        // SUM(debit) AS totalExpenses
+        // FROM journal_items
+        // WHERE DATE(journal_date) >= ?
+        // AND DATE(journal_date) <= ?
+        // AND account_id_fk = 8 AND is_deleted = 0;`;
+        const query = `SELECT SUM(total_value) FROM journal_vouchers WHERE journal_number LIKE 'EXP%' AND is_deleted = 0 AND DATE(journal_date) BETWEEN ? AND ?`;
 
         let [[results]] = await pool.query(query, [startDate, endDate]);
 
