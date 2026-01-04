@@ -42,4 +42,7 @@ router.delete("/variants/:id", VariantsController.deleteVariant);
 
 router.get("/generate-barcode", ProductController.generateBarcode);
 
+// expired
+router.get("/expired", ProductController.getExpiredProducts);
+
 module.exports = router;
