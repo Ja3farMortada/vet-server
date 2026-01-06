@@ -1,5 +1,6 @@
 const pool = require("../config/database");
-const moment = require("moment");
+const Accounts = require("./AccountsModel");
+const moment = require("moment-timezone");
 
 class ReportModel {
     // get revenue
@@ -199,17 +200,9 @@ class ReportModel {
 
     // get product history
     static async getProductHistory(startDate, endDate, id, searchBy) {
-        console.log("called");
-
-        console.log(startDate);
-        console.log(endDate);
-
         // moment.tz.setDefault("Asia/Beirut");
         startDate = moment(startDate).format(`YYYY-MM-DD HH:mm:ss`);
         endDate = moment(endDate).format(`YYYY-MM-DD 23:59:59`);
-
-        console.log(startDate);
-        console.log(endDate);
         let query = `
 		SELECT
 			p.product_name,
@@ -249,6 +242,68 @@ class ReportModel {
 
         let [results] = await pool.query(query, [id, startDate, endDate]);
         return results;
+    }
+
+    // get customer debts
+    static async getDebts(startDate, endDate) {
+        const query = `
+            SELECT
+                COALESCE(SUM(total_debts), 0) AS total_debts
+            FROM (
+                SELECT
+                    COALESCE(SUM(ji.debit), 0) AS total_debts
+                FROM
+                    journal_items ji
+                INNER JOIN
+                    journal_vouchers jv ON jv.journal_id = ji.journal_id_fk
+                INNER JOIN
+                    accounts a ON ji.partner_id_fk = a.account_id
+                WHERE
+                    ji.is_deleted = 0
+                    AND a.is_customer = 1
+                    AND DATE(jv.journal_date) BETWEEN ? AND ?
+                GROUP BY
+                    ji.partner_id_fk
+            ) AS customer_balances;`;
+
+        let [[result]] = await pool.query(query, [startDate, endDate]);
+
+        return result;
+    }
+
+    // get customer payments
+    static async getCustomerPayments(startDate, endDate) {
+        const query = `SELECT SUM(total_value) AS total_payments
+            FROM journal_vouchers
+            WHERE DATE(journal_date) BETWEEN ? AND ?
+            AND journal_description = 'Payment Received'`;
+        let [[result]] = await pool.query(query, [startDate, endDate]);
+        return result;
+    }
+
+    static async getCashBalance(startDate, endDate) {
+        const [cashAccount] = await Accounts.getIdByAccountNumber("531");
+        const query = `SELECT
+        COALESCE(sum(debit) - sum(credit),0) AS balance
+        FROM journal_items ji
+        where ji.is_deleted = 0
+        AND DATE(ji.journal_date) BETWEEN ? AND ?
+        AND ji.account_id_fk = ?`;
+        let [[result]] = await pool.query(query, [
+            startDate,
+            endDate,
+            cashAccount.id,
+        ]);
+        return result;
+    }
+
+    static async getTotalPurchases(startDate, endDate) {
+        const query = `SELECT SUM(total_cost) AS total_purchases
+            FROM purchase_orders
+            WHERE DATE(order_datetime) BETWEEN ? AND ?
+            AND is_deleted = 0`;
+        let [[result]] = await pool.query(query, [startDate, endDate]);
+        return result;
     }
 }
 

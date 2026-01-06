@@ -202,12 +202,13 @@ class PurchaseOrders {
                 let payment_number = `REC${number.toString().padStart(4, "0")}`;
 
                 //insert to vouchers and journal_items
-                let query = `INSERT INTO journal_vouchers ( journal_number, journal_date, journal_description, total_value) VALUES (?, ?, ?, ?)`;
+                let query = `INSERT INTO journal_vouchers ( journal_number, journal_date, journal_description, total_value, journal_notes) VALUES (?, ?, ?, ?, ?)`;
                 const [journal_voucher] = await connection.query(query, [
                     payment_number,
                     payment.payment_date,
                     "Supplier Payment",
                     payment.amount,
+                    payment.journal_notes,
                 ]);
 
                 let [_531] = await Accounts.getIdByAccountNumber("531");

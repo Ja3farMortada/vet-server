@@ -537,7 +537,7 @@ class Product {
             WHERE V.product_id_fk = P.product_id
             AND V.is_deleted = 0
             AND V.expiry_date IS NOT NULL
-            AND V.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 1 MONTH)
+            AND V.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 2 MONTH)
         )
 
         ORDER BY P.product_id ASC;`;

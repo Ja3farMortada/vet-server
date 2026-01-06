@@ -128,6 +128,7 @@ class History {
 				A.phone AS partner_phone,
 				A.address AS partner_address,
 				A.account_id AS partner_id,
+                A.account_id AS account_id,
 				P.*,
 				P.journal_date AS payment_date
                 FROM journal_vouchers P
@@ -260,8 +261,8 @@ class History {
                 WHERE P.is_deleted = 0 AND journal_description = 'Supplier Payment'`;
         const params = [];
         if (criteria.payment_number) {
-            sql += ` AND P.journal_number = ?`;
-            params.push(criteria.payment_number);
+            sql += ` AND P.journal_number LIKE ?`;
+            params.push(`%${criteria.payment_number}%`);
         }
         if (criteria.partner_id) {
             sql += ` AND I.partner_id_fk = ?`;
