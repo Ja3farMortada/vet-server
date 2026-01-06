@@ -109,7 +109,8 @@ exports.generateBarcode = async (req, res, next) => {
 // get expired products
 exports.getExpiredProducts = async (req, res, next) => {
     try {
-        let expiredProducts = await Product.getExpiredProducts();
+        const { months } = req.params;
+        let expiredProducts = await Product.getExpiredProducts(months);
         res.status(200).send(expiredProducts);
     } catch (error) {
         next(error);

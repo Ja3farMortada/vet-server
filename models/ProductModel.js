@@ -445,7 +445,7 @@ class Product {
     }
 
     // get expired products
-    static async getExpiredProducts() {
+    static async getExpiredProducts(months) {
         const query = `SELECT
             P.*,
             C.category_id,
@@ -454,42 +454,31 @@ class Product {
             G.group_id,
             G.group_name,
             COALESCE(t.quantity, 0) AS quantity,
-
-            (
-                SELECT JSON_ARRAYAGG(
-                    JSON_OBJECT(
-                        'variant_id', V.variant_id,
-                        'product_id_fk', V.product_id_fk,
-                        'expiry_date', V.expiry_date,
-                        'variant_quantity', vt.quantity,
-                        'is_deleted', V.is_deleted
-                    )
-                )
-                FROM products_variants V
-                INNER JOIN (
-                    SELECT 
-                        variant_id,
-                        SUM(
-                            CASE 
-                                WHEN transaction_type IN (
-                                    'SUPPLY','RETURN','DELETE','ADD',
-                                    'REMOVE','SALE','DISPOSE','DELIVER'
-                                )
-                                THEN quantity 
-                                ELSE 0 
-                            END
-                        ) AS quantity
-                    FROM inventory_transactions
-                    GROUP BY variant_id
-                    HAVING quantity > 0
-                ) vt ON vt.variant_id = V.variant_id
-                WHERE V.product_id_fk = P.product_id
-                AND V.is_deleted = 0
-                AND V.expiry_date IS NOT NULL
-                AND V.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 2 MONTH)
-            ) AS variants_records
+            V.variant_id,
+            V.expiry_date,
+            vt.quantity AS variant_quantity
 
         FROM products P
+
+        INNER JOIN products_variants V ON V.product_id_fk = P.product_id
+
+        INNER JOIN (
+            SELECT 
+                variant_id,
+                SUM(
+                    CASE 
+                        WHEN transaction_type IN (
+                            'SUPPLY','RETURN','DELETE','ADD',
+                            'REMOVE','SALE','DISPOSE','DELIVER'
+                        )
+                        THEN quantity 
+                        ELSE 0 
+                    END
+                ) AS quantity
+            FROM inventory_transactions
+            GROUP BY variant_id
+            HAVING quantity > 0
+        ) vt ON vt.variant_id = V.variant_id
 
         LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
         LEFT JOIN category_groups G ON C.group_id_fk = G.group_id
@@ -512,37 +501,12 @@ class Product {
         ) t ON t.product_id_fk = P.product_id
 
         WHERE P.is_deleted = 0
-        AND P.has_variants = 1
+        AND V.is_deleted = 0
+        AND V.expiry_date IS NOT NULL
+        AND V.expiry_date <= DATE_ADD(CURDATE(), INTERVAL ? MONTH)
 
-        -- CRITICAL FILTER: product must have at least one qualifying variant with qty > 0
-        AND EXISTS (
-            SELECT 1
-            FROM products_variants V
-            INNER JOIN (
-                SELECT 
-                    variant_id,
-                    SUM(
-                        CASE 
-                            WHEN transaction_type IN (
-                                'SUPPLY','RETURN','DELETE','ADD',
-                                'REMOVE','SALE','DISPOSE','DELIVER'
-                            )
-                            THEN quantity 
-                            ELSE 0 
-                        END
-                    ) AS quantity
-                FROM inventory_transactions
-                GROUP BY variant_id
-                HAVING quantity > 0
-            ) vt ON vt.variant_id = V.variant_id
-            WHERE V.product_id_fk = P.product_id
-            AND V.is_deleted = 0
-            AND V.expiry_date IS NOT NULL
-            AND V.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 2 MONTH)
-        )
-
-        ORDER BY P.product_id ASC;`;
-        let [rows] = await pool.query(query);
+        ORDER BY V.expiry_date ASC;`;
+        let [rows] = await pool.query(query, [months]);
         return rows;
     }
 }
