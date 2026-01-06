@@ -324,6 +324,7 @@ class Product {
                 unit_price_usd: data.unit_price_usd,
                 product_notes: data.product_notes,
                 stock_management: data.stock_management,
+                low_stock_threshold: data.low_stock_threshold,
                 has_variants: data.has_variants || false,
             };
 
