@@ -5,7 +5,7 @@ class Customer {
     // get customers
     static async getAllCustomers() {
         const [result] = await pool.query(
-            "SELECT * FROM accounts WHERE is_customer = 1 AND is_deleted = 0"
+            "SELECT * FROM accounts WHERE is_customer = 1 AND is_deleted = 0",
         );
         return result;
     }
@@ -14,7 +14,7 @@ class Customer {
     static async getCustomerById(id) {
         const [[result]] = await pool.query(
             "SELECT * FROM accounts WHERE account_id = ? AND is_customer = 1 AND is_deleted = 0",
-            [id]
+            [id],
         );
         return result;
     }
@@ -25,13 +25,13 @@ class Customer {
         if (connection) {
             const [result] = await connection.query(
                 "INSERT INTO accounts SET ?",
-                data
+                data,
             );
             return result;
         } else {
             const [result] = await pool.query(
                 "INSERT INTO accounts SET ?",
-                data
+                data,
             );
             return result;
         }
@@ -41,7 +41,7 @@ class Customer {
     static async updateCustomer(id, data) {
         const [result] = await pool.query(
             "UPDATE accounts SET ? WHERE account_id = ? AND is_customer = 1 AND is_deleted = 0",
-            [data, id]
+            [data, id],
         );
         return result;
     }
@@ -50,7 +50,7 @@ class Customer {
     static async deleteCustomer(id) {
         const [result] = await pool.query(
             "UPDATE accounts SET is_deleted = 1 WHERE account_id = ? AND is_customer = 1",
-            [id]
+            [id],
         );
         return result;
     }
@@ -58,6 +58,8 @@ class Customer {
     // get customers debts
 
     static async getCustomerDebts(start_date, end_date) {
+        console.log(start_date, end_date);
+
         moment.tz.setDefault("Asia/Beirut");
         start_date = moment(start_date).format("YYYY-MM-DD");
         end_date = moment(end_date).format("YYYY-MM-DD");
@@ -121,7 +123,7 @@ class Customer {
             ) ranked_purchases
             WHERE
                 purchase_rank <= 1;`,
-            [account_id]
+            [account_id],
         );
         return result;
     }
