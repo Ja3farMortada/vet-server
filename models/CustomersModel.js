@@ -57,35 +57,78 @@ class Customer {
 
     // get customers debts
 
+    // static async getCustomerDebts(start_date, end_date) {
+    //     console.log(start_date, end_date);
+
+    //     moment.tz.setDefault("Asia/Beirut");
+    //     start_date = moment(start_date).format("YYYY-MM-DD");
+    //     end_date = moment(end_date).format("YYYY-MM-DD");
+
+    //     let query = `SELECT
+    // 				a.account_id,
+    // 				a.name,
+    // 				a.phone,
+    // 				COALESCE(SUM(ji.debit) - SUM(ji.credit), 0) AS balance
+    // 			FROM
+    // 				journal_vouchers jv
+
+    // 			LEFT JOIN journal_items ji ON jv.journal_id = ji.journal_id_fk
+
+    // 			INNER JOIN accounts a ON ji.partner_id_fk = a.account_id
+
+    // 			WHERE
+    // 				ji.is_deleted = 0
+    // 				AND DATE(jv.journal_date) BETWEEN ? AND ?
+    // 				AND a.is_customer = 1
+    // 			GROUP BY ji.partner_id_fk
+
+    // 			HAVING balance != 0
+    // 			ORDER BY balance DESC`;
+    //     const [result] = await pool.query(query, [start_date, end_date]);
+
+    //     return result;
+    // }
     static async getCustomerDebts(start_date, end_date) {
-        console.log(start_date, end_date);
-
         moment.tz.setDefault("Asia/Beirut");
-        start_date = moment(start_date).format("YYYY-MM-DD");
-        end_date = moment(end_date).format("YYYY-MM-DD");
 
-        let query = `SELECT
-					a.account_id,
-					a.name,
-					a.phone,
-					COALESCE(SUM(ji.debit) - SUM(ji.credit), 0) AS balance
-				FROM
-					journal_vouchers jv
-				
-				LEFT JOIN journal_items ji ON jv.journal_id = ji.journal_id_fk
-					
-				INNER JOIN accounts a ON ji.partner_id_fk = a.account_id
-					
-				WHERE
-					ji.is_deleted = 0 
-					AND DATE(jv.journal_date) BETWEEN ? AND ?
-					AND a.is_customer = 1
-				GROUP BY ji.partner_id_fk
+        let where = [];
+        let params = [];
 
-				HAVING balance != 0
-				ORDER BY balance DESC`;
-        const [result] = await pool.query(query, [start_date, end_date]);
+        // Base conditions (always applied)
+        where.push(`ji.is_deleted = 0`);
+        where.push(`a.is_customer = 1`);
 
+        // Safe date filters
+        if (start_date && moment(start_date, moment.ISO_8601, true).isValid()) {
+            const formattedStart = moment(start_date).format("YYYY-MM-DD");
+            where.push(`DATE(jv.journal_date) >= ?`);
+            params.push(formattedStart);
+        }
+
+        if (end_date && moment(end_date, moment.ISO_8601, true).isValid()) {
+            const formattedEnd = moment(end_date).format("YYYY-MM-DD");
+            where.push(`DATE(jv.journal_date) <= ?`);
+            params.push(formattedEnd);
+        }
+
+        const query = `
+        SELECT
+            a.account_id,
+            a.name,
+            a.phone,
+            COALESCE(SUM(ji.debit) - SUM(ji.credit), 0) AS balance
+        FROM journal_vouchers jv
+        LEFT JOIN journal_items ji 
+            ON jv.journal_id = ji.journal_id_fk
+        INNER JOIN accounts a 
+            ON ji.partner_id_fk = a.account_id
+        WHERE ${where.join(" AND ")}
+        GROUP BY ji.partner_id_fk
+        HAVING balance != 0
+        ORDER BY balance DESC
+    `;
+
+        const [result] = await pool.query(query, params);
         return result;
     }
 
