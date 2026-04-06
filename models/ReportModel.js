@@ -51,7 +51,7 @@ class ReportModel {
     // get revenue by group
     static async getGroupedRevenue(startDate, endDate) {
         const query = `WITH shop_sales AS (
-            SELECT SUM(total_price) AS shop_sales FROM sales_order_items SOI 
+            SELECT SUM(SOI.total_price) AS shop_sales FROM sales_order_items SOI 
 				INNER JOIN sales_orders O ON SOI.order_id = O.order_id
 				INNER JOIN products P ON SOI.product_id = P.product_id
 				INNER JOIN products_categories C ON P.category_id_fk = C.category_id
@@ -59,9 +59,10 @@ class ReportModel {
 				WHERE DATE(O.order_datetime) BETWEEN ? AND ?
 				AND G.group_id = 1
 				AND SOI.is_deleted = 0
+                AND O.is_deleted = 0
         	),
         	medical_sales AS (
-            SELECT SUM(total_price) AS medical_sales FROM sales_order_items SOI 
+            SELECT SUM(SOI.total_price) AS medical_sales FROM sales_order_items SOI 
 				INNER JOIN sales_orders O ON SOI.order_id = O.order_id
 				INNER JOIN products P ON SOI.product_id = P.product_id
 				INNER JOIN products_categories C ON P.category_id_fk = C.category_id
@@ -69,6 +70,7 @@ class ReportModel {
 				WHERE DATE(O.order_datetime) BETWEEN ? AND ?
 				AND G.group_id = 2
 				AND SOI.is_deleted = 0
+                AND O.is_deleted = 0
         	)
 			SELECT
 				shop_sales, medical_sales
