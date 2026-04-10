@@ -40,8 +40,9 @@ class History {
             params.push(moment(criteria.end_date).format("yyyy-MM-DD"));
         }
 
+        const limit = params.length > 0 ? 1000 : 100;
         sql += ` GROUP BY O.order_id
-        ORDER BY order_date DESC, O.invoice_number DESC LIMIT 500`;
+        ORDER BY order_date DESC, O.invoice_number DESC LIMIT ${limit}`;
 
         const [rows] = await pool.query(sql, params);
         return rows;
