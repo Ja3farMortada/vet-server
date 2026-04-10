@@ -30,7 +30,7 @@ class SellOrders {
             await connection.beginTransaction();
 
             let operation_type = order.operation_type;
-            delete order.operation_type;
+            // delete order.operation_type;
 
             moment.tz.setDefault("Asia/Beirut");
             order.order_datetime = moment(order.order_datetime).format(

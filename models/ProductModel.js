@@ -68,6 +68,25 @@ class Product {
         return result;
     }
 
+    // get all deleted products
+    static async getDeleted() {
+        const query = `SELECT
+					P.*,
+					C.category_id,
+					C.group_id_fk,
+        			C.category_name,
+					G.group_id,
+					G.group_name
+        		FROM products P
+        		LEFT JOIN products_categories C ON P.category_id_fk = C.category_id
+				LEFT JOIN category_groups G ON C.group_id_fk = G.group_id
+        		WHERE P.is_deleted = 1
+        		ORDER BY P.product_id ASC;`;
+
+        const [result] = await pool.query(query);
+        return result;
+    }
+
     // get by category_id
     static async getByCategory(category_id) {
         const [rows] = await pool.query(
@@ -360,6 +379,29 @@ class Product {
             // delete transactions
             await connection.query(
                 `DELETE FROM inventory_transactions WHERE product_id_fk = ?`,
+                id
+            );
+
+            // commit transaction
+            await connection.commit();
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    // restore deleted product
+    static async restore(id) {
+        const connection = await pool.getConnection();
+        try {
+            // begin transaction
+            await connection.beginTransaction();
+
+            // restore product table
+            await connection.query(
+                `UPDATE products SET is_deleted = 0 WHERE product_id = ?`,
                 id
             );
 

@@ -23,11 +23,13 @@ router.put("/units", UnitController.updateUnit);
 router.delete("/units/:id", UnitController.deleteUnit);
 
 router.get("/items", ProductController.getAllProducts);
+router.get("/deleted", ProductController.getDeletedProducts);
 router.get("/items/:category_id", ProductController.getByCategory);
 router.get("/item/:barcode", ProductController.getByBarcode);
 router.post("/items", ProductController.createProduct);
 router.put("/items", ProductController.updateProduct);
 router.delete("/items/:id", ProductController.deleteProduct);
+router.patch("/restore/:id", ProductController.restoreProduct);
 router.post("/correction", ProductController.addStockCorrection);
 router.get("/history/:id", ProductController.getHistoryById);
 

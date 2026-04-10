@@ -5,7 +5,7 @@ class Customer {
     // get customers
     static async getAllCustomers() {
         const [result] = await pool.query(
-            "SELECT * FROM accounts WHERE is_customer = 1 AND is_deleted = 0",
+            "SELECT * FROM accounts WHERE is_customer = 1 AND is_deleted = 0 ORDER BY account_id DESC",
         );
         return result;
     }

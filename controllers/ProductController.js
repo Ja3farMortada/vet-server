@@ -11,6 +11,15 @@ exports.getAllProducts = async (req, res, next) => {
     }
 };
 
+exports.getDeletedProducts = async (req, res, next) => {
+    try {
+        let products = await Product.getDeleted();
+        res.status(200).send(products);
+    } catch (error) {
+        next(error);
+    }
+};
+
 exports.getByCategory = async (req, res) => {
     try {
         let category_id = req.params.category_id;
@@ -68,6 +77,18 @@ exports.deleteProduct = async (req, res, next) => {
         await Product.delete(product_id);
         res.status(202).json({
             message: "Item has been deleted successfully!",
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.restoreProduct = async (req, res, next) => {
+    const product_id = req.params.id;
+    try {
+        await Product.restore(product_id);
+        res.status(200).json({
+            message: "Item has been restored successfully!",
         });
     } catch (error) {
         next(error);

@@ -32,15 +32,10 @@ exports.createCustomer = async (req, res, next) => {
         const { insertId } = await Customer.createCustomer(data);
         const customer = await Customer.getCustomerById(insertId);
 
-        console.log(user);
-
         // emit socket
         io.emit("customerCreated", [customer, user]);
 
-        res.status(201).json({
-            message: "Customer created successfully",
-            customer,
-        });
+        res.status(201).send(customer);
     } catch (error) {
         next(error);
     }
@@ -59,10 +54,7 @@ exports.updateCustomer = async (req, res, next) => {
         // emit socket
         io.emit("customerUpdated", [customer, user]);
 
-        res.status(201).json({
-            message: "Customer updated successfully",
-            customer,
-        });
+        res.status(201).send(customer);
     } catch (error) {
         next(error);
     }

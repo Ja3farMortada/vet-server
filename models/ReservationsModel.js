@@ -38,24 +38,8 @@ class Reservation {
                 pet_id: data.pet_id,
             };
 
-            if (data.customer_option === "create_new") {
-                // customer object
-                let customerData = {
-                    name: data.title,
-                    phone: data.phone,
-                    address: data.address,
-                };
-                // create customer model
-                const createdCustomer = await Customer.createCustomer(
-                    customerData,
-                    connection
-                );
-
-                reservationData.customer_id_fk = createdCustomer.insertId;
-            } else {
-                if (data.customer_id_fk) {
-                    reservationData.customer_id_fk = data.customer_id_fk;
-                }
+            if (data.customer_id_fk) {
+                reservationData.customer_id_fk = data.customer_id_fk;
             }
 
             let query = `INSERT INTO reservations SET ?`;
@@ -84,23 +68,7 @@ class Reservation {
                 notes: data.notes,
             };
 
-            if (data.customer_option === "create_new") {
-                // customer object
-                let customerData = {
-                    name: data.title,
-                    phone: data.phone,
-                    address: data.address,
-                };
-                // create customer model
-                const createdCustomer = await Customer.createCustomer(
-                    customerData,
-                    connection
-                );
-
-                reservationData.customer_id_fk = createdCustomer.insertId;
-            } else {
-                reservationData.customer_id_fk = data.customer_id_fk;
-            }
+            reservationData.customer_id_fk = data.customer_id_fk;
 
             let query = `UPDATE reservations SET ? WHERE id = ?`;
             const [rows] = await pool.query(query, [reservationData, data.id]);
@@ -122,7 +90,7 @@ class Reservation {
     static async delete(id) {
         await pool.query(
             `UPDATE reservations SET is_deleted = 1 WHERE id = ?`,
-            id
+            id,
         );
     }
 }
