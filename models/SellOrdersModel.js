@@ -399,7 +399,7 @@ class SellOrders {
 
             // fix date
             order.order_datetime = moment(order.order_datetime).format(
-                `YYYY-MM-DD HH:mm`,
+                `YYYY-MM-DD HH:mm:ss`,
             );
 
             // order.order_datetime = orderCheck.order_datetime;
