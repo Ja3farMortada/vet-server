@@ -1,4 +1,5 @@
 const User = require("../models/UserModel");
+const UserLogin = require("../models/UserLoginModel");
 
 // get users
 exports.getUsers = async (req, res, next) => {
@@ -60,6 +61,18 @@ exports.deleteUser = async (req, res, next) => {
 	try {
 		await User.delete(user_id);
 		res.status(201).send({ message: "User deleted successfully!" });
+	} catch (error) {
+		next(error);
+	}
+};
+
+// get user logins
+exports.getUserLogins = async (req, res, next) => {
+	let user_id = req.params.id;
+
+	try {
+		let logins = await UserLogin.getByUserId(user_id);
+		res.status(200).send(logins);
 	} catch (error) {
 		next(error);
 	}

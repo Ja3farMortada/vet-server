@@ -4,7 +4,7 @@
     "description": "Server for vet app",
     "main": "app.js",
     "scripts": {
-        "start": "nodemon development.js",
+        "start": "nodemon app.js",
         "release": "node app.js",
         "fix": "npm i"
     },

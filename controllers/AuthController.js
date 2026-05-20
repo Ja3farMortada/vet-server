@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/UserModel");
+const UserLogin = require("../models/UserLoginModel");
 
 exports.login = async (req, res, next) => {
 	const io = req.io;
@@ -40,6 +41,10 @@ exports.login = async (req, res, next) => {
 			if (user.user_type !== "admin") {
 				io.emit("userLoggedIn", username);
 			}
+
+			// Register a record for the successful login
+			await UserLogin.create(result.user_id);
+
 			res.status(200).send(user);
 		} else {
 			res.status(401).send("Incorrect username or password!");

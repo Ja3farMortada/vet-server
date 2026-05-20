@@ -16,13 +16,13 @@ const errorHandler = require("./middleware/errorHandler");
 const server = http.createServer(app);
 const socketIO = require("socket.io");
 const io = socketIO(server, {
-  cors: {
-    origins: ["*"],
-  },
+    cors: {
+        origins: ["*"],
+    },
 });
 app.use((req, res, next) => {
-  req.io = io;
-  next();
+    req.io = io;
+    next();
 });
 
 //import routes
@@ -43,6 +43,7 @@ const ReservationsRoutes = require("./routes/reservations.routes");
 const PetsRoutes = require("./routes/pets.routes");
 const PurchaseOrdersRoutes = require("./routes/purchase.routes");
 const RemindersRoutes = require("./routes/reminders.routes");
+const NotesRoutes = require("./routes/notes.routes");
 
 // common routes
 app.use("/auth", AuthRoutes);
@@ -61,6 +62,7 @@ app.use("/reservations", auth, ReservationsRoutes);
 app.use("/pets", auth, PetsRoutes);
 app.use("/supply", auth, PurchaseOrdersRoutes);
 app.use("/reminders", auth, RemindersRoutes);
+app.use("/notes", auth, NotesRoutes);
 
 // admin routes
 app.use("/users", admin, UsersRoutes);
@@ -69,10 +71,10 @@ app.use(express.static(path.join(__dirname, "app/browser")));
 
 // check API status page
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+    res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // handle errors
 app.use(errorHandler);
 
-server.listen(3000, () => console.log(`listening on port 3000 ...`));
+server.listen(3500, () => console.log(`listening on port 3500 ...`));

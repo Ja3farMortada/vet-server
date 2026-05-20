@@ -46,13 +46,15 @@ class User {
 
 		if (!rows) return null;
 
-		await pool.query(
-			`UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE username = ?`,
-			username
-		);
-
 		const verified = bcrypt.compareSync(password, rows.password);
-		return verified ? rows : null;
+		if (verified) {
+			await pool.query(
+				`UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE username = ?`,
+				username
+			);
+			return rows;
+		}
+		return null;
 	}
 
 	// validate password by user_id
