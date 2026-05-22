@@ -49,12 +49,12 @@ class User {
 
         const verified = bcrypt.compareSync(password, rows.password);
         if (verified) {
-            const now = moment()
+            const beirutTime = moment()
                 .tz("Asia/Beirut")
                 .format("YYYY-MM-DD HH:mm:ss");
             await pool.query(
                 `UPDATE users SET last_login = ? WHERE username = ?`,
-                [now, username],
+                [beirutTime, username],
             );
             return rows;
         }
