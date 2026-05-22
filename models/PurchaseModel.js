@@ -288,8 +288,6 @@ class PurchaseOrders {
             let added_products_costs = [];
             //add order_items to inventory transactions
             items.forEach((element) => {
-                console.log(element);
-
                 product_id = element.product_id;
                 variant_id = element["variant_id"] || null;
                 quantity = element.quantity;

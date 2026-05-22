@@ -19,7 +19,6 @@ exports.createReservation = async (req, res, next) => {
         moment.tz.setDefault("Asia/Beirut");
         data.start = moment(data.start).format(`YYYY-MM-DD HH:mm:ss`);
         data.end = moment(data.end).format(`YYYY-MM-DD HH:mm:ss`);
-        console.log(data);
         let result = await Reservation.create(data);
         let [added] = await Reservation.getById(result.insertId);
 
