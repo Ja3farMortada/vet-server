@@ -13,6 +13,8 @@ exports.getAllReminders = async (req, res, next) => {
 // create
 exports.createReminder = async (req, res, next) => {
 	try {
+		const io = req.io;
+		const user = req.user;
 		const data = req.body;
 
 		if (!data.reminder_title || !data.due_date) {
@@ -23,6 +25,9 @@ exports.createReminder = async (req, res, next) => {
 
 		const insertId = await Reminder.create(data);
 		const reminder = await Reminder.getById(insertId);
+
+		io.emit("reminderCreated", [reminder, user]);
+
 		res.status(201).send(reminder);
 	} catch (error) {
 		next(error);
@@ -32,6 +37,8 @@ exports.createReminder = async (req, res, next) => {
 // update
 exports.updateReminder = async (req, res, next) => {
 	try {
+		const io = req.io;
+		const user = req.user;
 		const id = req.params.id;
 		const data = req.body;
 
@@ -47,6 +54,9 @@ exports.updateReminder = async (req, res, next) => {
 		}
 
 		const updated = await Reminder.getById(id);
+
+		io.emit("reminderUpdated", [updated, user]);
+
 		res.status(200).send(updated);
 	} catch (error) {
 		next(error);
@@ -56,11 +66,17 @@ exports.updateReminder = async (req, res, next) => {
 // delete
 exports.deleteReminder = async (req, res, next) => {
 	try {
+		const io = req.io;
+		const user = req.user;
 		const id = req.params.id;
+
 		const affected = await Reminder.delete(id);
 		if (!affected) {
 			return res.status(404).json({ error: "Reminder not found." });
 		}
+
+		io.emit("reminderDeleted", [id, user]);
+
 		res.json({ message: "Reminder deleted successfully!" });
 	} catch (error) {
 		next(error);
@@ -101,10 +117,19 @@ exports.getRemindersByAccountId = async (req, res, next) => {
 // mark as notified
 exports.markAsNotified = async (req, res, next) => {
 	try {
-		const affected = await Reminder.markNotified(req.params.id);
+		const io = req.io;
+		const user = req.user;
+		const id = req.params.id;
+
+		const affected = await Reminder.markNotified(id);
 		if (!affected) {
 			return res.status(404).json({ error: "Reminder not found." });
 		}
+
+		const reminder = await Reminder.getById(id);
+
+		io.emit("reminderNotified", [reminder, user]);
+
 		res.json({ message: "Reminder marked as notified!" });
 	} catch (error) {
 		next(error);
@@ -114,10 +139,19 @@ exports.markAsNotified = async (req, res, next) => {
 // mark as completed (handles repeat logic inside model)
 exports.markAsCompleted = async (req, res, next) => {
 	try {
-		const affected = await Reminder.markCompleted(req.params.id);
+		const io = req.io;
+		const user = req.user;
+		const id = req.params.id;
+
+		const affected = await Reminder.markCompleted(id);
 		if (!affected) {
 			return res.status(404).json({ error: "Reminder not found." });
 		}
+
+		const reminder = await Reminder.getById(id);
+
+		io.emit("reminderCompleted", [reminder, user]);
+
 		res.json({ message: "Reminder marked as completed!" });
 	} catch (error) {
 		next(error);

@@ -36,6 +36,7 @@ class Reservation {
                 borderColor: data.backgroundColor,
                 notes: data.notes,
                 pet_id: data.pet_id,
+                is_confirmed: data.is_confirmed
             };
 
             if (data.customer_id_fk) {
@@ -66,6 +67,7 @@ class Reservation {
                 backgroundColor: data.backgroundColor,
                 borderColor: data.backgroundColor,
                 notes: data.notes,
+                is_confirmed: data.is_confirmed
             };
 
             reservationData.customer_id_fk = data.customer_id_fk;
