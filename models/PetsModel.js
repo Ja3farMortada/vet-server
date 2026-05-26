@@ -10,7 +10,7 @@ class Pet {
         let sql = `SELECT P.*, A.name, A.phone, A.address
 		FROM pets P
 		LEFT JOIN accounts A ON P.customer_id_fk = A.account_id
-		LEFT JOIN medical_history H ON P.pet_id = H.pet_id_fk
+		LEFT JOIN medical_history H ON P.pet_id = H.pet_id
 		WHERE P.is_deleted = 0`;
         const params = [];
         if (criteria.customer_id_fk) {
@@ -169,7 +169,7 @@ class Pet {
 
             // delete from medical history
             await connection.query(
-                "DELETE FROM medical_history WHERE pet_id_fk = ?",
+                "DELETE FROM medical_history WHERE pet_id = ?",
                 id,
             );
 
@@ -188,7 +188,7 @@ class Pet {
 
     // fetch history
     static async fetchMedicalHistory(pet_id) {
-        let query = `SELECT * FROM medical_history WHERE pet_id_fk = ? AND is_deleted = 0 ORDER BY record_datetime DESC`;
+        let query = `SELECT * FROM medical_history WHERE pet_id = ? AND is_deleted = 0 ORDER BY record_datetime DESC`;
 
         const [rows] = await pool.query(query, pet_id);
         return rows;
@@ -211,6 +211,8 @@ class Pet {
 
     // update history
     static async updateMedicalHistory(data) {
+        console.log(data);
+
         let record = {
             medical_description: data.medical_description,
             record_datetime: moment(data.record_datetime).format(
