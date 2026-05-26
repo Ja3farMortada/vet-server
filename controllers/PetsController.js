@@ -22,9 +22,21 @@ exports.getAllPets = async (req, res, next) => {
 	}
 };
 
+exports.getByUUID = async (req, res, next) => {
+	try {
+		let uuid = req.params.uuid;
+		let [result] = await Pet.getByUUID(uuid);
+		res.status(200).send(result);
+	} catch(error) {
+		next(error)
+	}
+}
+
 // create
 exports.createPet = async (req, res, next) => {
 	try {
+		const io = req.io;
+		const user = req.user;
 		let data = req.body;
 		moment.tz.setDefault("Asia/Beirut");
 		data.birthdate = moment(data.birthdate).format(`YYYY-MM-DD`);
@@ -32,6 +44,10 @@ exports.createPet = async (req, res, next) => {
 		let [createdPet] = await Pet.create(data);
 
 		let [result] = await Pet.getById(createdPet.insertId);
+
+		// emit socket
+		io.emit("petCreated", [result, user]);
+
 		res.status(200).send(result);
 	} catch (error) {
 		next(error);
@@ -41,6 +57,8 @@ exports.createPet = async (req, res, next) => {
 // update
 exports.updatePet = async (req, res, next) => {
 	try {
+		const io = req.io;
+		const user = req.user;
 		let data = req.body;
 		moment.tz.setDefault("Asia/Beirut");
 		data.birthdate = moment(data.birthdate).format(`YYYY-MM-DD`);
@@ -48,6 +66,10 @@ exports.updatePet = async (req, res, next) => {
 		await Pet.update(data);
 
 		let [result] = await Pet.getById(data.pet_id);
+
+		// emit socket
+		io.emit("petUpdated", [result, user]);
+
 		res.status(200).send(result);
 	} catch (error) {
 		next(error);
@@ -58,7 +80,14 @@ exports.updatePet = async (req, res, next) => {
 exports.deletePet = async (req, res, next) => {
     const pet_id = req.params.id;
     try {
+        const io = req.io;
+        const user = req.user;
+        const [pet] = await Pet.getById(pet_id);
         await Pet.delete(pet_id);
+
+        // emit socket
+        io.emit("petDeleted", [pet, user]);
+
         res.status(202).json({
             message: "Pet profile has been deleted successfully!",
         });

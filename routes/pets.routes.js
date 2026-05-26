@@ -4,9 +4,10 @@ const router = express.Router();
 const PetsController = require("../controllers/PetsController");
 
 router.get("/", PetsController.getAllPets);
+router.get('/:uuid', PetsController.getByUUID)
 router.post("/search", PetsController.fetchPets);
 router.post("/", PetsController.createPet);
-router.put("/", PetsController.updatePet);
+router.put("/:id", PetsController.updatePet);
 router.delete('/:id', PetsController.deletePet)
 
 router.get("/history/:id", PetsController.fetchMedicalHistory);
