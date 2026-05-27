@@ -51,3 +51,4 @@ Thumbs.db
 .angular
 node_modules
 package-lock.json
+uploads

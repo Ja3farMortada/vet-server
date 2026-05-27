@@ -64,10 +64,13 @@ app.use("/supply", auth, PurchaseOrdersRoutes);
 app.use("/reminders", auth, ReminderRoutes);
 app.use("/notes", auth, NotesRoutes);
 
+app.use("/pet-media", auth, require("./routes/pet-media.routes"));
+
 // admin routes
 app.use("/users", admin, UsersRoutes);
 
-app.use(express.static(path.join(__dirname, "app/browser")));
+// app.use(express.static(path.join(__dirname, "app/browser")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // check API status page
 app.get("/", (req, res) => {
