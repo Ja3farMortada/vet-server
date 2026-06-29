@@ -259,6 +259,11 @@ class SellOrders {
 
             let order_id = order.order_id;
 
+            moment.tz.setDefault("Asia/Beirut");
+            order.order_datetime = moment(order.order_datetime).format(
+                `YYYY-MM-DD HH:mm:ss`,
+            );
+
             //check existing order for user
             // let [[orderCheck]] = await connection.query(
             // 	`SELECT * FROM sales_orders WHERE order_id = ?`,
@@ -398,9 +403,9 @@ class SellOrders {
             // ++++++++++++++++++ Insert the new order +++++++++++++++++++++++
 
             // fix date
-            order.order_datetime = moment(order.order_datetime).format(
-                `YYYY-MM-DD HH:mm:ss`,
-            );
+            // order.order_datetime = moment(order.order_datetime).format(
+            //     `YYYY-MM-DD HH:mm:ss`,
+            // );
 
             // order.order_datetime = orderCheck.order_datetime;
             order.updated_at = moment().format(`YYYY-MM-DD HH:mm:ss`);

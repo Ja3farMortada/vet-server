@@ -7,10 +7,16 @@ class Reservation {
         let query = `SELECT R.*,
         A.name AS title,
         A.phone,
-        P.pet_name
+        P.pet_name,
+        P.species,
+        P.breed,
+        P.gender,
+        O.option_id,
+        O.option_label
         FROM reservations R
         LEFT JOIN accounts A ON R.customer_id_fk = A.account_id
         LEFT JOIN pets P ON R.pet_id = P.pet_id
+        LEFT JOIN reservation_options O ON R.option_id = O.option_id
         WHERE R.is_deleted = 0`;
         const [result] = await pool.query(query);
 
@@ -36,7 +42,8 @@ class Reservation {
                 borderColor: data.backgroundColor,
                 notes: data.notes,
                 pet_id: data.pet_id,
-                is_confirmed: data.is_confirmed
+                is_confirmed: data.is_confirmed,
+                option_id: data.option_id,
             };
 
             if (data.customer_id_fk) {
@@ -67,7 +74,8 @@ class Reservation {
                 backgroundColor: data.backgroundColor,
                 borderColor: data.backgroundColor,
                 notes: data.notes,
-                is_confirmed: data.is_confirmed
+                is_confirmed: data.is_confirmed,
+                option_id: data.option_id,
             };
 
             reservationData.customer_id_fk = data.customer_id_fk;

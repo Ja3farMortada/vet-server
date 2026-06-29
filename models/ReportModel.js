@@ -51,7 +51,10 @@ class ReportModel {
     // get revenue by group
     static async getGroupedRevenue(startDate, endDate) {
         const query = `WITH shop_sales AS (
-            SELECT SUM(SOI.total_price) AS shop_sales FROM sales_order_items SOI 
+            SELECT 
+                COALESCE(SUM(SOI.total_price), 0) AS shop_sales,
+                COALESCE(SUM(SOI.total_price - (SOI.quantity * COALESCE(SOI.unit_cost, 0))), 0) AS shop_profit
+            FROM sales_order_items SOI 
 				INNER JOIN sales_orders O ON SOI.order_id = O.order_id
 				INNER JOIN products P ON SOI.product_id = P.product_id
 				INNER JOIN products_categories C ON P.category_id_fk = C.category_id
@@ -62,7 +65,10 @@ class ReportModel {
                 AND O.is_deleted = 0
         	),
         	medical_sales AS (
-            SELECT SUM(SOI.total_price) AS medical_sales FROM sales_order_items SOI 
+            SELECT 
+                COALESCE(SUM(SOI.total_price), 0) AS medical_sales,
+                COALESCE(SUM(SOI.total_price - (SOI.quantity * COALESCE(SOI.unit_cost, 0))), 0) AS medical_profit
+            FROM sales_order_items SOI 
 				INNER JOIN sales_orders O ON SOI.order_id = O.order_id
 				INNER JOIN products P ON SOI.product_id = P.product_id
 				INNER JOIN products_categories C ON P.category_id_fk = C.category_id
@@ -73,7 +79,7 @@ class ReportModel {
                 AND O.is_deleted = 0
         	)
 			SELECT
-				shop_sales, medical_sales
+				shop_sales, shop_profit, medical_sales, medical_profit
 			FROM
 				shop_sales
 				CROSS JOIN medical_sales;`;

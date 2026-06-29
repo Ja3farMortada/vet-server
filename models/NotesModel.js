@@ -20,7 +20,7 @@ class Note {
         let query = "";
         notes.forEach((element) => {
             query += `UPDATE sticky_notes SET note_index = ${notes.indexOf(
-                element
+                element,
             )} WHERE id = ${element.id};`;
         });
         await pool.query(query);
@@ -30,7 +30,7 @@ class Note {
     static async create(note) {
         // create max index for note_index
         const [[{ note_index }]] = await pool.query(
-            `SELECT IFNULL(MAX(note_index) + 1, 0) AS note_index FROM sticky_notes`
+            `SELECT IFNULL(MAX(note_index) + 1, 0) AS note_index FROM sticky_notes`,
         );
         note.note_index = note_index;
 

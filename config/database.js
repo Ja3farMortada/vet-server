@@ -1,29 +1,32 @@
 const mysql = require("mysql2/promise");
 
 var pool = mysql.createPool({
-	connectionLimit: 10,
-	host: process.env.DB_HOST,
-	user: process.env.DB_USER,
-	password: process.env.DB_PASS,
-	database: process.env.DB_NAME,
-	multipleStatements: true,
-	dateStrings: true,
+    connectionLimit: 10,
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+    multipleStatements: true,
+    dateStrings: true,
+    // utf8mb4 is required to store 4-byte characters such as emojis.
+    // Without it the connection defaults to 3-byte utf8 and mangles them.
+    charset: "utf8mb4",
 });
 
 pool.getConnection(async (err, connection) => {
-	if (err) {
-		if (err.code === "PROTOCOL_CONNECTION_LOST") {
-			console.error("Database connection was closed.");
-		}
-		if (err.code === "ER_CON_COUNT_ERROR") {
-			console.error("Database has too many connections.");
-		}
-		if (err.code === "ECONNREFUSED") {
-			console.error("Database connection was refused.");
-		}
-	}
-	if (connection) await connection.release();
-	return;
+    if (err) {
+        if (err.code === "PROTOCOL_CONNECTION_LOST") {
+            console.error("Database connection was closed.");
+        }
+        if (err.code === "ER_CON_COUNT_ERROR") {
+            console.error("Database has too many connections.");
+        }
+        if (err.code === "ECONNREFUSED") {
+            console.error("Database connection was refused.");
+        }
+    }
+    if (connection) await connection.release();
+    return;
 });
 
 module.exports = pool;
