@@ -23,9 +23,79 @@ class Reservation {
         return result;
     }
 
+    // lightweight search for the calendar quick-find (owner, pet, phone,
+    // reservation number, notes). Returns only what the UI needs to locate a
+    // reservation on the calendar — never the full event payload.
+    static async search(q, limit = 25) {
+        const term = `%${q}%`;
+        // LIKE is case-insensitive under MySQL's default *_ci collations.
+        let query = `SELECT
+            R.id AS id,
+            A.name AS ownerName,
+            P.pet_name AS petName,
+            A.phone AS phone,
+            CAST(R.id AS CHAR) AS reservationNumber,
+            R.start AS start,
+            R.end AS end,
+            R.notes AS notes
+        FROM reservations R
+        LEFT JOIN accounts A ON R.customer_id_fk = A.account_id
+        LEFT JOIN pets P ON R.pet_id = P.pet_id
+        WHERE R.is_deleted = 0
+          AND (
+            A.name LIKE ?
+            OR P.pet_name LIKE ?
+            OR A.phone LIKE ?
+            OR CAST(R.id AS CHAR) LIKE ?
+            OR R.notes LIKE ?
+          )
+        ORDER BY R.start DESC
+        LIMIT ?`;
+        const params = [term, term, term, term, term, limit];
+        const [result] = await pool.query(query, params);
+
+        return result;
+    }
+
+    // get reservations by pet
+    static async getByPetId(pet_id) {
+        let query = `SELECT R.*,
+        A.name AS title,
+        A.phone,
+        P.pet_name,
+        P.species,
+        P.breed,
+        P.gender,
+        O.option_id,
+        O.option_label,
+        O.option_color
+        FROM reservations R
+        LEFT JOIN accounts A ON R.customer_id_fk = A.account_id
+        LEFT JOIN pets P ON R.pet_id = P.pet_id
+        LEFT JOIN reservation_options O ON R.option_id = O.option_id
+        WHERE R.is_deleted = 0 AND R.pet_id = ?
+        ORDER BY R.start DESC`;
+        const [result] = await pool.query(query, [pet_id]);
+
+        return result;
+    }
+
     // get by id
     static async getById(id) {
-        let query = `SELECT R.*, A.name AS title, A.phone FROM reservations R LEFT JOIN accounts A ON R.customer_id_fk = A.account_id WHERE R.is_deleted = 0 AND id = ?`;
+        let query = `SELECT R.*,
+        A.name AS title,
+        A.phone,
+        P.pet_name,
+        P.species,
+        P.breed,
+        P.gender,
+        O.option_id,
+        O.option_label
+        FROM reservations R
+        LEFT JOIN accounts A ON R.customer_id_fk = A.account_id
+        LEFT JOIN pets P ON R.pet_id = P.pet_id
+        LEFT JOIN reservation_options O ON R.option_id = O.option_id
+        WHERE R.is_deleted = 0 AND R.id = ?`;
         const [result] = await pool.query(query, [id]);
         return result;
     }
@@ -74,6 +144,7 @@ class Reservation {
                 backgroundColor: data.backgroundColor,
                 borderColor: data.backgroundColor,
                 notes: data.notes,
+                pet_id: data.pet_id,
                 is_confirmed: data.is_confirmed,
                 option_id: data.option_id,
             };

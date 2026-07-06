@@ -10,6 +10,28 @@ exports.getReservations = async (req, res, next) => {
     }
 };
 
+exports.searchReservations = async (req, res, next) => {
+    try {
+        const q = (req.query.q || "").trim();
+        // Nothing to match on — return an empty set instead of scanning all rows.
+        if (!q) return res.status(200).send([]);
+
+        const results = await Reservation.search(q);
+        res.status(200).send(results);
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.getReservationsByPetId = async (req, res, next) => {
+    try {
+        let reservations = await Reservation.getByPetId(req.params.pet_id);
+        res.status(200).send(reservations);
+    } catch (error) {
+        next(error);
+    }
+};
+
 exports.createReservation = async (req, res, next) => {
     try {
         const io = req.io;
@@ -61,7 +83,7 @@ exports.deleteReservation = async (req, res, next) => {
         await Reservation.delete(id);
 
         // emit socket
-        io.emit("reservationUpdated", [user]);
+        io.emit("reservationUpdated", [id, user]);
         res.status(202).json({
             message: "Reservation has been deleted successfully!",
         });
