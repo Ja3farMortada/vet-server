@@ -14,5 +14,6 @@ router.delete("/:id", ReminderController.deleteReminder);
 
 router.put("/:id/notify", ReminderController.markAsNotified);
 router.put("/:id/complete", ReminderController.markAsCompleted);
+router.put("/:id/book", ReminderController.markAsBooked);
 
 module.exports = router;

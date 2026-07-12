@@ -128,7 +128,8 @@ class History {
 				A.account_id AS partner_id,
                 A.account_id AS account_id,
 				P.*,
-				P.journal_date AS payment_date
+				P.journal_date AS payment_date,
+                P.journal_notes AS notes
                 FROM journal_vouchers P
                 INNER JOIN journal_items I ON P.journal_id = I.journal_id_fk
                 INNER JOIN accounts A ON I.partner_id_fk = A.account_id

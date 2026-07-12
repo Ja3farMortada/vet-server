@@ -7,7 +7,7 @@ const Customer = require("../models/CustomersModel");
 class Pet {
     // fetch pets
     static async fetchPets(criteria) {
-        let sql = `SELECT P.*, A.name, A.phone, A.address
+        let sql = `SELECT P.*, A.name, A.phone, A.phone_2, A.address, A.notes AS customer_notes
 		FROM pets P
 		LEFT JOIN accounts A ON P.customer_id_fk = A.account_id
 		LEFT JOIN medical_history H ON P.pet_id = H.pet_id
@@ -40,7 +40,7 @@ class Pet {
 
     // get all pets
     static async getAll() {
-        const query = `SELECT P.*, A.name, A.phone, A.address
+        const query = `SELECT P.*, A.name, A.phone, A.phone_2, A.address, A.notes AS customer_notes
 		FROM pets P
 		LEFT JOIN accounts A ON P.customer_id_fk = A.account_id
 		WHERE P.is_deleted = 0 ORDER BY pet_id DESC`;
@@ -50,7 +50,7 @@ class Pet {
 
     // get by id
     static async getById(id) {
-        const query = `SELECT P.*, A.name, A.phone, A.address
+        const query = `SELECT P.*, A.name, A.phone, A.phone_2, A.address, A.notes AS customer_notes
 		FROM pets P
 		LEFT JOIN accounts A ON P.customer_id_fk = A.account_id
 		WHERE P.is_deleted = 0 AND pet_id = ?`;
@@ -60,7 +60,7 @@ class Pet {
 
     // get by uuid
     static async getByUUID(uuid) {
-        const query = `SELECT P.*, A.name, A.phone, A.address
+        const query = `SELECT P.*, A.name, A.phone, A.phone_2, A.address, A.notes AS customer_notes
 		FROM pets P
 		LEFT JOIN accounts A ON P.customer_id_fk = A.account_id
 		WHERE P.is_deleted = 0 AND P.uuid = ?`;

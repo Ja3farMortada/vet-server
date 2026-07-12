@@ -1,6 +1,13 @@
 const pool = require("../config/database");
 const Customer = require("../models/CustomersModel");
 
+// ─── Migration (run once, manually) ──────────────────────────────────────────
+// Adds the per-reservation text colour. Defaulted to white so every existing
+// row stays legible without a backfill (safe migration).
+//
+// ALTER TABLE reservations
+//   ADD COLUMN textColor VARCHAR(9) NOT NULL DEFAULT '#ffffff' AFTER borderColor;
+
 class Reservation {
     // get all reservations
     static async getAll() {
@@ -34,6 +41,7 @@ class Reservation {
             A.name AS ownerName,
             P.pet_name AS petName,
             A.phone AS phone,
+            A.phone_2 AS phone_2,
             CAST(R.id AS CHAR) AS reservationNumber,
             R.start AS start,
             R.end AS end,
@@ -46,12 +54,13 @@ class Reservation {
             A.name LIKE ?
             OR P.pet_name LIKE ?
             OR A.phone LIKE ?
+            OR A.phone_2 LIKE ?
             OR CAST(R.id AS CHAR) LIKE ?
             OR R.notes LIKE ?
           )
         ORDER BY R.start DESC
         LIMIT ?`;
-        const params = [term, term, term, term, term, limit];
+        const params = [term, term, term, term, term, term, limit];
         const [result] = await pool.query(query, params);
 
         return result;
@@ -110,6 +119,7 @@ class Reservation {
                 end: data.end,
                 backgroundColor: data.backgroundColor,
                 borderColor: data.backgroundColor,
+                textColor: data.textColor || "#ffffff",
                 notes: data.notes,
                 pet_id: data.pet_id,
                 is_confirmed: data.is_confirmed,
@@ -143,6 +153,7 @@ class Reservation {
                 end: data.end,
                 backgroundColor: data.backgroundColor,
                 borderColor: data.backgroundColor,
+                textColor: data.textColor || "#ffffff",
                 notes: data.notes,
                 pet_id: data.pet_id,
                 is_confirmed: data.is_confirmed,

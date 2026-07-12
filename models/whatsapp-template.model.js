@@ -3,10 +3,14 @@ CREATE TABLE whatsapp_templates (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     message_template TEXT NOT NULL,
+    location ENUM('reminders','reservations','sell','payment') NOT NULL DEFAULT 'reminders',
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+-- Multiple templates per location are allowed (each screen shows a picker of
+-- its own location's active templates), so `location` is NOT unique.
 */
 
 const pool = require("../config/database");
@@ -22,12 +26,25 @@ const normalizeMany = (rows) =>
     Array.isArray(rows) ? rows.map(normalize) : rows;
 
 class WhatsappTemplate {
-    // get all templates, ordered by name; optionally only active ones
-    static async getAll(activeOnly = false) {
-        const query = activeOnly
-            ? "SELECT * FROM whatsapp_templates WHERE is_active = 1 ORDER BY name ASC"
-            : "SELECT * FROM whatsapp_templates ORDER BY name ASC";
-        const [results] = await pool.query(query);
+    // get all templates, ordered by name; optionally filtered by active flag
+    // and/or assigned location
+    static async getAll(activeOnly = false, location = null) {
+        const conditions = [];
+        const params = [];
+        if (activeOnly) {
+            conditions.push("is_active = 1");
+        }
+        if (location) {
+            conditions.push("location = ?");
+            params.push(location);
+        }
+        const where = conditions.length
+            ? `WHERE ${conditions.join(" AND ")}`
+            : "";
+        const [results] = await pool.query(
+            `SELECT * FROM whatsapp_templates ${where} ORDER BY name ASC`,
+            params,
+        );
         return normalizeMany(results);
     }
 

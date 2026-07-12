@@ -1,13 +1,11 @@
 const WhatsappTemplate = require("../models/whatsapp-template.model");
 
-// Variables are hardcoded by the system — users cannot create custom ones.
-const SUPPORTED_VARIABLES = [
-	"customer_name",
-	"pet_name",
-	"appointment_type",
-	"appointment_datetime",
-];
+// Locations a template can be assigned to (which screen it is offered on).
+const ALLOWED_LOCATIONS = ["reminders", "reservations", "sell", "payment"];
 
+// Variables are hardcoded by the system — users cannot create custom ones.
+// `locations` restricts a variable to specific template locations; when omitted
+// the variable is available everywhere.
 const VARIABLE_LIST = [
 	{
 		key: "customer_name",
@@ -18,16 +16,42 @@ const VARIABLE_LIST = [
 		key: "pet_name",
 		placeholder: "{{pet_name}}",
 		description: "Pet name",
+		locations: ["reminders", "reservations"],
 	},
 	{
 		key: "appointment_type",
 		placeholder: "{{appointment_type}}",
 		description: "Appointment type",
+		locations: ["reminders", "reservations"],
 	},
 	{
 		key: "appointment_datetime",
 		placeholder: "{{appointment_datetime}}",
 		description: "Appointment date and time",
+		locations: ["reminders", "reservations"],
+	},
+	{
+		key: "amount",
+		placeholder: "{{amount}}",
+		description: "Transaction amount",
+		locations: ["sell", "payment"],
+	},
+	{
+		key: "customer_balance",
+		placeholder: "{{customer_balance}}",
+		description: "Customer's current account balance",
+		locations: ["sell", "payment"],
+	},
+	{
+		key: "invoice_items",
+		placeholder: "{{invoice_items}}",
+		description: "List of items sold with quantity and price",
+		locations: ["sell"],
+	},
+	{
+		key: "current_datetime",
+		placeholder: "{{current_datetime}}",
+		description: "Current date and time",
 	},
 ];
 
@@ -37,17 +61,37 @@ const extractPlaceholders = (text) => {
 	return matches.map((m) => m.replace(/\{\{\s*|\s*\}\}/g, ""));
 };
 
-// Return any placeholders that are NOT in the allowed list.
-const findInvalidVariables = (text) => {
-	const used = extractPlaceholders(text);
-	return [...new Set(used.filter((v) => !SUPPORTED_VARIABLES.includes(v)))];
+// A variable is allowed when it exists and either has no location restriction
+// or lists the template's location.
+const isVariableAllowed = (key, location) => {
+	const def = VARIABLE_LIST.find((v) => v.key === key);
+	if (!def) return false;
+	if (!def.locations) return true;
+	return def.locations.includes(location);
 };
 
-// GET /api/whatsapp-templates  (optional ?activeOnly=true)
+// Return any placeholders that are not valid for the given location.
+const findInvalidVariables = (text, location) => {
+	const used = extractPlaceholders(text);
+	return [...new Set(used.filter((v) => !isVariableAllowed(v, location)))];
+};
+
+// GET /api/whatsapp-templates  (optional ?activeOnly=true&location=reminders)
 exports.getAllTemplates = async (req, res, next) => {
 	try {
 		const activeOnly = req.query.activeOnly === "true";
-		const templates = await WhatsappTemplate.getAll(activeOnly);
+		const location = req.query.location;
+
+		if (location && !ALLOWED_LOCATIONS.includes(location)) {
+			return res.status(400).json({
+				error: `location must be one of: ${ALLOWED_LOCATIONS.join(", ")}.`,
+			});
+		}
+
+		const templates = await WhatsappTemplate.getAll(
+			activeOnly,
+			location || null,
+		);
 		res.status(200).json(templates);
 	} catch (error) {
 		next(error);
@@ -79,7 +123,7 @@ exports.getTemplateById = async (req, res, next) => {
 // POST /api/whatsapp-templates
 exports.createTemplate = async (req, res, next) => {
 	try {
-		const { name, message_template, is_active } = req.body;
+		const { name, message_template, location, is_active } = req.body;
 
 		if (!name || !message_template) {
 			return res
@@ -87,7 +131,16 @@ exports.createTemplate = async (req, res, next) => {
 				.json({ error: "name and message_template are required." });
 		}
 
-		const invalidVariables = findInvalidVariables(message_template);
+		if (!location) {
+			return res.status(400).json({ error: "location is required." });
+		}
+		if (!ALLOWED_LOCATIONS.includes(location)) {
+			return res.status(400).json({
+				error: `location must be one of: ${ALLOWED_LOCATIONS.join(", ")}.`,
+			});
+		}
+
+		const invalidVariables = findInvalidVariables(message_template, location);
 		if (invalidVariables.length > 0) {
 			return res
 				.status(400)
@@ -97,6 +150,7 @@ exports.createTemplate = async (req, res, next) => {
 		const data = {
 			name,
 			message_template,
+			location,
 			is_active: is_active === undefined ? 1 : is_active ? 1 : 0,
 		};
 
@@ -111,7 +165,7 @@ exports.createTemplate = async (req, res, next) => {
 // PUT /api/whatsapp-templates/:id
 exports.updateTemplate = async (req, res, next) => {
 	try {
-		const { name, message_template, is_active } = req.body;
+		const { name, message_template, location, is_active } = req.body;
 
 		if (!name || !message_template) {
 			return res
@@ -119,7 +173,16 @@ exports.updateTemplate = async (req, res, next) => {
 				.json({ error: "name and message_template are required." });
 		}
 
-		const invalidVariables = findInvalidVariables(message_template);
+		if (!location) {
+			return res.status(400).json({ error: "location is required." });
+		}
+		if (!ALLOWED_LOCATIONS.includes(location)) {
+			return res.status(400).json({
+				error: `location must be one of: ${ALLOWED_LOCATIONS.join(", ")}.`,
+			});
+		}
+
+		const invalidVariables = findInvalidVariables(message_template, location);
 		if (invalidVariables.length > 0) {
 			return res
 				.status(400)
@@ -129,6 +192,7 @@ exports.updateTemplate = async (req, res, next) => {
 		const data = {
 			name,
 			message_template,
+			location,
 			is_active: is_active === undefined ? 1 : is_active ? 1 : 0,
 		};
 

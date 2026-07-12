@@ -10,21 +10,22 @@ class Payment {
 
             moment.tz.setDefault("Asia/Beirut");
             paymentData.payment_date = moment(paymentData.payment_date).format(
-                `YYYY-MM-DD HH:mm:ss`
+                `YYYY-MM-DD HH:mm:ss`,
             );
 
             let [[{ number }]] = await connection.query(
-                `SELECT IFNULL(MAX(CAST(SUBSTRING(journal_number , 4) AS UNSIGNED)), 1000) + 1 AS number FROM journal_vouchers jv where journal_number like 'PAY%'`
+                `SELECT IFNULL(MAX(CAST(SUBSTRING(journal_number , 4) AS UNSIGNED)), 1000) + 1 AS number FROM journal_vouchers jv where journal_number like 'PAY%'`,
             );
 
             let payment_number = `PAY${number.toString().padStart(4, "0")}`;
 
             //insert to vouchers and journal_items
-            let query = `INSERT INTO journal_vouchers ( journal_number, journal_date, journal_description, total_value) VALUES (?, ?, ?, ?)`;
+            let query = `INSERT INTO journal_vouchers ( journal_number, journal_date, journal_description, journal_notes, total_value) VALUES (?, ?, ?, ?, ?)`;
             const [journal_voucher] = await connection.query(query, [
                 payment_number,
                 paymentData.payment_date,
                 "Payment Received",
+                paymentData.notes,
                 paymentData.amount,
             ]);
 
@@ -44,7 +45,7 @@ class Payment {
 
             await connection.query(
                 `INSERT INTO journal_items SET ?`,
-                firstItem
+                firstItem,
             );
 
             let [_413] = await Accounts.getIdByAccountNumber("413");
@@ -62,7 +63,7 @@ class Payment {
             };
             await connection.query(
                 `INSERT INTO journal_items SET ?`,
-                secondItem
+                secondItem,
             );
 
             await connection.commit();
@@ -80,16 +81,11 @@ class Payment {
         try {
             await connection.beginTransaction();
 
-            // moment.tz.setDefault("Asia/Beirut");
-            // paymentData.payment_date = moment(paymentData.payment_date).format(
-            //     `YYYY-MM-DD HH:mm:ss`
-            // );
-
             //insert to vouchers and journal_items
-            let query = `UPDATE journal_vouchers SET total_value = ? WHERE journal_id = ?`;
+            let query = `UPDATE journal_vouchers SET total_value = ?,  journal_notes = ? WHERE journal_id = ?`;
             const [journal_voucher] = await connection.query(query, [
-                // paymentData.payment_date,
                 paymentData.amount,
+                paymentData.notes,
                 paymentData.journal_id,
             ]);
 
@@ -102,7 +98,7 @@ class Payment {
                     paymentData.payment_date,
                     paymentData.journal_id,
                     _531.id,
-                ]
+                ],
             );
 
             let [_413] = await Accounts.getIdByAccountNumber("413");
@@ -115,7 +111,7 @@ class Payment {
                     paymentData.account_id,
                     paymentData.journal_id,
                     _413.id,
-                ]
+                ],
             );
 
             await connection.commit();
@@ -138,7 +134,7 @@ class Payment {
                 inner join journal_vouchers jv
                 ON jv.journal_id = ji.journal_id_fk
                 WHERE journal_id_fk = ?`,
-                [journal_id]
+                [journal_id],
             );
             journal_items = journal_items.map((item) => item.journal_item_id);
 
@@ -148,7 +144,7 @@ class Payment {
             // );
             await connection.query(
                 `UPDATE journal_items SET is_deleted = 1 WHERE journal_item_id IN (?)`,
-                [journal_items]
+                [journal_items],
             );
 
             // await connection.query(
@@ -157,7 +153,7 @@ class Payment {
             // );
             await connection.query(
                 `UPDATE journal_vouchers SET is_deleted = 1 WHERE journal_id = ?`,
-                [journal_id]
+                [journal_id],
             );
 
             await connection.commit();
@@ -176,11 +172,11 @@ class Payment {
 
             moment.tz.setDefault("Asia/Beirut");
             paymentData.payment_date = moment(paymentData.payment_date).format(
-                `YYYY-MM-DD HH:mm:ss`
+                `YYYY-MM-DD HH:mm:ss`,
             );
 
             let [[{ number }]] = await connection.query(
-                `SELECT IFNULL(MAX(CAST(SUBSTRING(journal_number , 4) AS UNSIGNED)), 1000) + 1 AS number FROM journal_vouchers jv where journal_number like 'REC%'`
+                `SELECT IFNULL(MAX(CAST(SUBSTRING(journal_number , 4) AS UNSIGNED)), 1000) + 1 AS number FROM journal_vouchers jv where journal_number like 'REC%'`,
             );
 
             let payment_number = `REC${number.toString().padStart(4, "0")}`;
@@ -210,7 +206,7 @@ class Payment {
 
             await connection.query(
                 `INSERT INTO journal_items SET ?`,
-                firstItem
+                firstItem,
             );
 
             let [_401] = await Accounts.getIdByAccountNumber("401");
@@ -227,7 +223,7 @@ class Payment {
             };
             await connection.query(
                 `INSERT INTO journal_items SET ?`,
-                secondItem
+                secondItem,
             );
 
             await connection.commit();
@@ -247,7 +243,7 @@ class Payment {
 
             moment.tz.setDefault("Asia/Beirut");
             paymentData.payment_date = moment(paymentData.payment_date).format(
-                `YYYY-MM-DD HH:mm:ss`
+                `YYYY-MM-DD HH:mm:ss`,
             );
 
             //insert to vouchers and journal_items
@@ -268,7 +264,7 @@ class Payment {
                     paymentData.payment_date,
                     paymentData.journal_id,
                     _531.id,
-                ]
+                ],
             );
 
             let [_401] = await Accounts.getIdByAccountNumber("401");
@@ -281,7 +277,7 @@ class Payment {
                     paymentData.account_id,
                     paymentData.journal_id,
                     _401.id,
-                ]
+                ],
             );
 
             await connection.commit();

@@ -15,7 +15,7 @@ exports.getAllReservationOptions = async (req, res, next) => {
 
 exports.createReservationOption = async (req, res, next) => {
     try {
-        const { option_label, option_color } = req.body;
+        const { option_label, option_color, option_text_color } = req.body;
 
         if (!option_label || !option_color) {
             return res
@@ -26,6 +26,7 @@ exports.createReservationOption = async (req, res, next) => {
         const result = await Settings.createReservationOption({
             option_label,
             option_color,
+            option_text_color: option_text_color || "#ffffff",
         });
 
         const created = await Settings.getReservationOptionById(result.insertId);
@@ -40,7 +41,7 @@ exports.createReservationOption = async (req, res, next) => {
 exports.updateReservationOption = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { option_label, option_color } = req.body;
+        const { option_label, option_color, option_text_color } = req.body;
 
         if (!option_label || !option_color) {
             return res
@@ -53,7 +54,11 @@ exports.updateReservationOption = async (req, res, next) => {
             return res.status(404).json({ error: "Reservation option not found" });
         }
 
-        await Settings.updateReservationOption(id, { option_label, option_color });
+        await Settings.updateReservationOption(id, {
+            option_label,
+            option_color,
+            option_text_color: option_text_color || "#ffffff",
+        });
 
         const updated = await Settings.getReservationOptionById(id);
         res.status(200).json(updated);

@@ -136,6 +136,27 @@ exports.markAsNotified = async (req, res, next) => {
 	}
 };
 
+exports.markAsBooked = async (req, res, next) => {
+	try {
+		const io = req.io;
+		const user = req.user;
+		const id = req.params.id;
+
+		const affected = await Reminder.markBooked(id);
+		if (!affected) {
+			return res.status(404).json({ error: "Reminder not found." });
+		}
+
+		const reminder = await Reminder.getById(id);
+
+		io.emit("reminderBooked", [reminder, user]);
+
+		res.json({ message: "Reminder marked as booked!" });
+	} catch (error) {
+		next(error);
+	}
+};
+
 // mark as completed (handles repeat logic inside model)
 exports.markAsCompleted = async (req, res, next) => {
 	try {

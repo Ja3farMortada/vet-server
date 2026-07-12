@@ -3,7 +3,7 @@ const moment = require("moment-timezone");
 
 // MySQL stores TINYINT(1) for boolean columns, which mysql2 returns as 0/1.
 // Normalize the flag columns to real booleans before sending to the client.
-const BOOL_FIELDS = ["is_notified", "is_completed", "is_repeated"];
+const BOOL_FIELDS = ["is_notified", "is_completed", "is_repeated", "is_booked"];
 
 const toBool = (v) => v === 1 || v === true || v === "1";
 
@@ -144,6 +144,13 @@ class Reminder {
 		}
 
 		query = `UPDATE reminders SET is_completed = 1 WHERE reminder_id = ?`;
+		const [result] = await pool.query(query, [id]);
+		return result.affectedRows;
+	}
+
+	// mark as booked
+	static async markBooked(id) {
+		const query = `UPDATE reminders SET is_booked = 1 WHERE reminder_id = ?`;
 		const [result] = await pool.query(query, [id]);
 		return result.affectedRows;
 	}

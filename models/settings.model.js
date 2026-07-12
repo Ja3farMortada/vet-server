@@ -1,5 +1,12 @@
 const pool = require("../config/database");
 
+// ─── Migration (run once, manually) ──────────────────────────────────────────
+// Adds the per-option text colour. Defaulted to white so existing options stay
+// legible without a backfill (safe migration).
+//
+// ALTER TABLE reservation_options
+//   ADD COLUMN option_text_color VARCHAR(9) NOT NULL DEFAULT '#ffffff' AFTER option_color;
+
 class Settings {
     // ─── Reservation Options ─────────────────────────────────────────────────
 
