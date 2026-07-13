@@ -16,5 +16,9 @@ router.post("/purchase/search", HistoryController.fetchPurchaseHistory);
 router.post("/receipt/search", HistoryController.fetchReceiptHistory);
 
 router.post("/products/search", HistoryController.fetchProductsSalesHistory);
+router.post(
+	"/purchases/products/search",
+	HistoryController.fetchProductsPurchaseHistory
+);
 
 module.exports = router;

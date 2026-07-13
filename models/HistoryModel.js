@@ -324,6 +324,50 @@ class History {
         const [rows] = await pool.query(sql, params);
         return rows;
     }
+
+    // fetch products purchase history (purchased line items — mirror of
+    // fetchProductsSalesHistory but for supplier purchase orders)
+    static async fetchProductsPurchaseHistory(criteria) {
+        let sql = `SELECT poi.*,
+				p.sku,
+				p.product_name,
+				a.name AS supplier_name,
+				po.invoice_number,
+				po.order_datetime,
+				(poi.quantity * poi.unit_cost_usd) AS total_cost
+			FROM purchase_order_items poi
+				INNER JOIN purchase_orders po ON poi.order_id_fk = po.order_id
+				INNER JOIN products p ON poi.product_id_fk = p.product_id
+				INNER JOIN accounts a ON po.partner_id_fk = a.account_id
+				WHERE po.is_deleted = 0`;
+        const params = [];
+        if (criteria.supplier_id) {
+            sql += ` AND po.partner_id_fk = ?`;
+            params.push(criteria.supplier_id);
+        }
+        if (criteria.product_id) {
+            sql += ` AND poi.product_id_fk = ?`;
+            params.push(criteria.product_id);
+        }
+        if (criteria.invoice_number) {
+            sql += ` AND po.invoice_number LIKE ?`;
+            params.push(`%${criteria.invoice_number}%`);
+        }
+        if (criteria.start_date) {
+            sql += ` AND DATE(po.order_datetime) >= ?`;
+            params.push(moment(criteria.start_date).format("yyyy-MM-DD"));
+        }
+        if (criteria.end_date) {
+            sql += ` AND DATE(po.order_datetime) <= ?`;
+            params.push(moment(criteria.end_date).format("yyyy-MM-DD"));
+        }
+
+        sql += ` ORDER BY po.order_datetime DESC LIMIT ?`;
+        params.push(criteria.limit || 1000);
+
+        const [rows] = await pool.query(sql, params);
+        return rows;
+    }
 }
 
 module.exports = History;
