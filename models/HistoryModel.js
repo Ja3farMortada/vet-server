@@ -9,7 +9,6 @@ class History {
             A.name AS customer_name,
             A.phone AS customer_phone,
             A.address AS customer_address,
-            A.financial_number,
             O.*,
             O.order_datetime AS order_date,
 			P.pet_id,
@@ -81,7 +80,6 @@ class History {
             A.name AS customer_name,
             A.phone AS customer_phone,
             A.address AS customer_address,
-            A.financial_number,
             O.*,
             O.order_datetime AS order_date,
             JSON_ARRAYAGG(JSON_OBJECT('order_item_id', M.order_item_id, 'product_id', M.product_id, 'product_name', S.product_name, 'variant_id', M.variant_id, 'expiry_date', V.expiry_date, 'barcode', S.barcode, 'quantity', M.quantity, 'price_type', M.price_type, 'original_price', M.original_price, 'discount_percentage', M.discount_percentage, 'unit_cost', M.unit_cost, 'unit_price', M.unit_price, 'total_price', M.total_price)) items
@@ -168,7 +166,6 @@ class History {
                 A.name AS customer_name,
                 A.phone AS customer_phone,
                 A.address AS customer_address,
-                A.financial_number,
                 RO.*,
                 DATE(RO.order_datetime) AS order_date,
                 JSON_ARRAYAGG(JSON_OBJECT('order_item_id', M.order_item_id, 'product_id', M.product_id, 'product_name', S.product_name, 'quantity', M.quantity, 'price_type', M.price_type,'unit_cost', M.unit_cost, 'unit_price', M.unit_price, 'total_price', M.total_price)) items
@@ -207,7 +204,6 @@ class History {
             A.name AS supplier_name,
             A.phone AS supplier_phone,
             A.address AS supplier_address,
-            A.financial_number,
             PO.*,
             DATE(PO.order_datetime) AS order_date,
             JSON_ARRAYAGG(JSON_OBJECT('order_item_id', M.order_item_id, 'product_id', M.product_id_fk, 'product_name', S.product_name, 'variant_id', M.variant_id, 'expiry_date', V.expiry_date, 'barcode', S.barcode , 'quantity', M.quantity, 'unit_cost', M.unit_cost_usd, 'unit_price', M.unit_cost_usd )) items
