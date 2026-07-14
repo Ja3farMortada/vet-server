@@ -124,6 +124,8 @@ class Reservation {
                 pet_id: data.pet_id,
                 is_confirmed: data.is_confirmed,
                 option_id: data.option_id,
+                // NULL is valid — the calendar treats it as the default (left) side
+                reservation_type: data.reservation_type ?? null,
             };
 
             if (data.customer_id_fk) {
@@ -158,6 +160,8 @@ class Reservation {
                 pet_id: data.pet_id,
                 is_confirmed: data.is_confirmed,
                 option_id: data.option_id,
+                // NULL is valid — the calendar treats it as the default (left) side
+                reservation_type: data.reservation_type ?? null,
             };
 
             reservationData.customer_id_fk = data.customer_id_fk;
