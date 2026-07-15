@@ -1,32 +1,34 @@
 const jwt = require("jsonwebtoken");
 
 const verifyToken = (req, res, next) => {
-	const token =
-		req.body.token || req.query.token || req.headers["x-access-token"];
+    // Express 5's express.json() leaves req.body undefined when there is no
+    // parsed JSON body (e.g. GET requests), so guard every source.
+    const token =
+        req.body?.token || req.query?.token || req.headers["x-access-token"];
 
-	if (!token) {
-		return res.status(403).send("A token is required for authentication");
-	}
-	try {
-		const decoded = jwt.verify(
-			token,
-			"$3a#_cJDUV-$QsRewWXcyH-Xdji8vet101#%^$*(_ZkfNdI@#!D-Nv0E_M3a"
-		);
-		req.user = decoded;
-	} catch (err) {
-		return res.status(401).send("Invalid Token");
-	}
-	return next();
+    if (!token) {
+        return res.status(403).send("A token is required for authentication");
+    }
+    try {
+        const decoded = jwt.verify(
+            token,
+            "$3a#_cJDUV-$QsRewWXcyH-Xdji8vet101#%^$*(_ZkfNdI@#!D-Nv0E_M3a",
+        );
+        req.user = decoded;
+    } catch (err) {
+        return res.status(401).send("Invalid Token");
+    }
+    return next();
 };
 
 const verifyAdmin = (req, res, next) => {
-	verifyToken(req, res, () => {
-		const user = req.user;
-		if (user.user_type !== "admin") {
-			return res.status(403).send("No enough permissions to access");
-		}
-		return next();
-	});
+    verifyToken(req, res, () => {
+        const user = req.user;
+        if (user.user_type !== "admin") {
+            return res.status(403).send("No enough permissions to access");
+        }
+        return next();
+    });
 };
 
 exports.auth = verifyToken;
