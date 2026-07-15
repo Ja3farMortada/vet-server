@@ -26,7 +26,7 @@ class PurchaseOrders {
             order.journal_voucher_id = journal_voucher.insertId;
 
             // get 4011 account id
-            let [_4011] = await Accounts.getIdByAccountNumber("4011");
+            let [_4011] = await Accounts.getIdByAccountNumber("4011", connection);
 
             let firstItem = {
                 journal_id_fk: journal_voucher.insertId,
@@ -46,7 +46,7 @@ class PurchaseOrders {
             );
 
             // get account_id_fk for 6011-1 or 6011-2 (to be implemented later on and should be received from frontend)
-            let [_6011] = await Accounts.getIdByAccountNumber("6011");
+            let [_6011] = await Accounts.getIdByAccountNumber("6011", connection);
 
             let secondItem = {
                 journal_id_fk: journal_voucher.insertId,
@@ -211,7 +211,7 @@ class PurchaseOrders {
                     payment.journal_notes,
                 ]);
 
-                let [_531] = await Accounts.getIdByAccountNumber("531");
+                let [_531] = await Accounts.getIdByAccountNumber("531", connection);
 
                 const firstItem = {
                     journal_id_fk: journal_voucher.insertId,
@@ -229,7 +229,7 @@ class PurchaseOrders {
                     firstItem
                 );
 
-                let [_401] = await Accounts.getIdByAccountNumber("401");
+                let [_401] = await Accounts.getIdByAccountNumber("401", connection);
                 const secondItem = {
                     journal_id_fk: journal_voucher.insertId,
                     journal_date: payment.payment_date,
@@ -349,7 +349,7 @@ class PurchaseOrders {
             ]);
             order.journal_voucher_id = journal_voucher.insertId;
 
-            let [_4011] = await Accounts.getIdByAccountNumber("4011");
+            let [_4011] = await Accounts.getIdByAccountNumber("4011", connection);
 
             const firstItem = {
                 journal_id_fk: journal_voucher.insertId,
@@ -367,7 +367,7 @@ class PurchaseOrders {
                 firstItem
             );
 
-            let [_6011] = await Accounts.getIdByAccountNumber("6011");
+            let [_6011] = await Accounts.getIdByAccountNumber("6011", connection);
             const secondItem = {
                 journal_id_fk: journal_voucher.insertId,
                 journal_date: order.order_datetime,

@@ -49,7 +49,7 @@ class SellOrders {
 
             // create first common journal item entry for sales
             // sales goods account
-            let [_7011] = await Accounts.getIdByAccountNumber("7011");
+            let [_7011] = await Accounts.getIdByAccountNumber("7011", connection);
             const salesGood = {
                 journal_id_fk: journal_voucher.insertId,
                 journal_date: order.order_datetime,
@@ -69,7 +69,7 @@ class SellOrders {
             // if customer selected
             if (order.customer_id && operation_type == "debt") {
                 // ordinary clients account
-                let [_4111] = await Accounts.getIdByAccountNumber("4111");
+                let [_4111] = await Accounts.getIdByAccountNumber("4111", connection);
                 const ordinaryClients = {
                     journal_id_fk: journal_voucher.insertId,
                     journal_date: order.order_datetime,
@@ -88,7 +88,7 @@ class SellOrders {
             } else {
                 // if no debt applied, add cash to cash account
                 // cash account
-                let [_531] = await Accounts.getIdByAccountNumber("531");
+                let [_531] = await Accounts.getIdByAccountNumber("531", connection);
                 const cashDollar = {
                     journal_id_fk: journal_voucher.insertId,
                     journal_date: order.order_datetime,
@@ -204,7 +204,7 @@ class SellOrders {
                     payment.amount,
                 ]);
 
-                let [_531] = await Accounts.getIdByAccountNumber("531");
+                let [_531] = await Accounts.getIdByAccountNumber("531", connection);
 
                 const firstItem = {
                     journal_id_fk: journal_voucher.insertId,
@@ -223,7 +223,7 @@ class SellOrders {
                     firstItem,
                 );
 
-                let [_413] = await Accounts.getIdByAccountNumber("413");
+                let [_413] = await Accounts.getIdByAccountNumber("413", connection);
                 const secondItem = {
                     journal_id_fk: journal_voucher.insertId,
                     journal_date: payment.payment_date,
@@ -269,7 +269,10 @@ class SellOrders {
             // 	`SELECT * FROM sales_orders WHERE order_id = ?`,
             // 	[order_id]
             // );
-            let orderCheck = await History.fetchSaleHistoryById(order_id);
+            let orderCheck = await History.fetchSaleHistoryById(
+                order_id,
+                connection,
+            );
 
             if (!orderCheck) throw new Error("Order not found");
 
@@ -342,7 +345,7 @@ class SellOrders {
 
             // create first common journal item entry for sales
             // sales goods account
-            let [_7011] = await Accounts.getIdByAccountNumber("7011");
+            let [_7011] = await Accounts.getIdByAccountNumber("7011", connection);
             const salesGood = {
                 journal_id_fk: journal_voucher.insertId,
                 journal_date: order.order_datetime,
@@ -362,7 +365,7 @@ class SellOrders {
             // if customer selected
             if (order.customer_id && wasDebt) {
                 // ordinary clients account
-                let [_4111] = await Accounts.getIdByAccountNumber("4111");
+                let [_4111] = await Accounts.getIdByAccountNumber("4111", connection);
                 const ordinaryClients = {
                     journal_id_fk: journal_voucher.insertId,
                     journal_date: order.order_datetime,
@@ -381,7 +384,7 @@ class SellOrders {
             } else {
                 // if no debt applied, add cash to cash account
                 // cash account
-                let [_531] = await Accounts.getIdByAccountNumber("531");
+                let [_531] = await Accounts.getIdByAccountNumber("531", connection);
                 const cashDollar = {
                     journal_id_fk: journal_voucher.insertId,
                     journal_date: order.order_datetime,

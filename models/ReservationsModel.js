@@ -133,7 +133,7 @@ class Reservation {
             }
 
             let query = `INSERT INTO reservations SET ?`;
-            const [rows] = await pool.query(query, reservationData);
+            const [rows] = await connection.query(query, reservationData);
 
             await connection.commit();
             return rows;
@@ -167,7 +167,10 @@ class Reservation {
             reservationData.customer_id_fk = data.customer_id_fk;
 
             let query = `UPDATE reservations SET ? WHERE id = ?`;
-            const [rows] = await pool.query(query, [reservationData, data.id]);
+            const [rows] = await connection.query(query, [
+                reservationData,
+                data.id,
+            ]);
 
             await connection.commit();
             return rows;

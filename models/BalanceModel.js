@@ -113,7 +113,7 @@ class BalanceModel {
 			]);
 
 			// cash account
-			let [_531] = await Accounts.getIdByAccountNumber("531");
+			let [_531] = await Accounts.getIdByAccountNumber("531", connection);
 			let cashDollar = {
 				journal_id_fk: journal_voucher.insertId,
 				journal_date: date,
@@ -123,7 +123,7 @@ class BalanceModel {
 			};
 
 			// capital account
-			let [_101] = await Accounts.getIdByAccountNumber("101");
+			let [_101] = await Accounts.getIdByAccountNumber("101", connection);
 			let capital = {
 				journal_id_fk: journal_voucher.insertId,
 				journal_date: date,

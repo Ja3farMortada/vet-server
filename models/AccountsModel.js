@@ -67,9 +67,13 @@ class Accounts {
     }
 
     // get id by account number
-    static async getIdByAccountNumber(number) {
+    // Pass the active transaction `conn` when calling this from inside a
+    // pool.getConnection() transaction, so the lookup runs on the SAME connection
+    // instead of borrowing another pool slot (avoids connection amplification /
+    // pool exhaustion). Defaults to the pool for standalone reads.
+    static async getIdByAccountNumber(number, conn = pool) {
         const query = `SELECT id FROM chart_of_accounts WHERE account_number = ?`;
-        const [id] = await pool.query(query, number);
+        const [id] = await conn.query(query, number);
         return id;
     }
 

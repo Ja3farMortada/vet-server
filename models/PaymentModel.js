@@ -29,7 +29,7 @@ class Payment {
                 paymentData.amount,
             ]);
 
-            let [_531] = await Accounts.getIdByAccountNumber("531");
+            let [_531] = await Accounts.getIdByAccountNumber("531", connection);
 
             const firstItem = {
                 journal_id_fk: journal_voucher.insertId,
@@ -48,7 +48,7 @@ class Payment {
                 firstItem,
             );
 
-            let [_413] = await Accounts.getIdByAccountNumber("413");
+            let [_413] = await Accounts.getIdByAccountNumber("413", connection);
 
             const secondItem = {
                 journal_id_fk: journal_voucher.insertId,
@@ -89,7 +89,7 @@ class Payment {
                 paymentData.journal_id,
             ]);
 
-            let [_531] = await Accounts.getIdByAccountNumber("531");
+            let [_531] = await Accounts.getIdByAccountNumber("531", connection);
 
             await connection.query(
                 `UPDATE journal_items SET debit=?, journal_date=? WHERE journal_id_fk=? AND account_id_fk=?`,
@@ -101,7 +101,7 @@ class Payment {
                 ],
             );
 
-            let [_413] = await Accounts.getIdByAccountNumber("413");
+            let [_413] = await Accounts.getIdByAccountNumber("413", connection);
 
             await connection.query(
                 `UPDATE journal_items SET credit= ?, journal_date= ?, partner_id_fk=? WHERE journal_id_fk= ? AND account_id_fk= ?`,
@@ -191,7 +191,7 @@ class Payment {
                 paymentData.journal_notes,
             ]);
 
-            let [_531] = await Accounts.getIdByAccountNumber("531");
+            let [_531] = await Accounts.getIdByAccountNumber("531", connection);
 
             const firstItem = {
                 journal_id_fk: journal_voucher.insertId,
@@ -209,7 +209,7 @@ class Payment {
                 firstItem,
             );
 
-            let [_401] = await Accounts.getIdByAccountNumber("401");
+            let [_401] = await Accounts.getIdByAccountNumber("401", connection);
             const secondItem = {
                 journal_id_fk: journal_voucher.insertId,
                 journal_date: paymentData.payment_date,
@@ -255,7 +255,7 @@ class Payment {
                 paymentData.journal_id,
             ]);
 
-            let [_531] = await Accounts.getIdByAccountNumber("531");
+            let [_531] = await Accounts.getIdByAccountNumber("531", connection);
 
             await connection.query(
                 `UPDATE journal_items SET credit=?, journal_date=? WHERE journal_id_fk=? AND account_id_fk=?`,
@@ -267,7 +267,7 @@ class Payment {
                 ],
             );
 
-            let [_401] = await Accounts.getIdByAccountNumber("401");
+            let [_401] = await Accounts.getIdByAccountNumber("401", connection);
 
             await connection.query(
                 `UPDATE journal_items SET debit= ?, journal_date= ? , partner_id_fk=? WHERE journal_id_fk= ? AND account_id_fk= ?`,

@@ -72,7 +72,10 @@ class History {
     }
 
     // fetch invoice history by id
-    static async fetchSaleHistoryById(id) {
+    // Pass the active transaction `conn` when called from inside a transaction
+    // (e.g. SellOrders.editOrder archives the pre-edit order) so this read runs on
+    // the held connection instead of borrowing another pool slot.
+    static async fetchSaleHistoryById(id, conn = pool) {
         let query = `SELECT
             O.*,
 			P.pet_id,
@@ -85,7 +88,7 @@ class History {
             WHERE O.is_deleted = 0
 			AND O.order_id = ?`;
 
-        const [[rows]] = await pool.query(query, id);
+        const [[rows]] = await conn.query(query, id);
         return rows;
     }
 
@@ -342,7 +345,9 @@ class History {
             params.push(moment(criteria.end_date).format("yyyy-MM-DD"));
         }
 
-        sql += ` ORDER BY order_datetime DESC`;
+        // NOTE: the limit param below had no matching placeholder, so the query
+        // scanned the full table unbounded. Bind it properly.
+        sql += ` ORDER BY order_datetime DESC LIMIT ?`;
         params.push(criteria.limit || 1000);
 
         const [rows] = await pool.query(sql, params);

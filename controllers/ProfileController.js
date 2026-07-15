@@ -50,8 +50,8 @@ exports.updatePassword = async (req, res, next) => {
 	try {
 		let [result] = await User.getByPassword(user.user_id);
 
-		// let currentHashPassword = bcrypt.hashSync(data.current_password, 10);
-		const verified = bcrypt.compareSync(
+		// async bcrypt — keep the hash off the event loop.
+		const verified = await bcrypt.compare(
 			data.current_password,
 			result.password
 		);

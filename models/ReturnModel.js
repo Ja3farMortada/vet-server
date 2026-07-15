@@ -31,7 +31,7 @@ class ReturnModel {
 			]);
 			order.journal_voucher_id = journal_voucher.insertId;
 
-			let [_4111] = await Accounts.getIdByAccountNumber("4111");
+			let [_4111] = await Accounts.getIdByAccountNumber("4111", connection);
 
 			const firstItem = {
 				journal_id_fk: journal_voucher.insertId,
@@ -47,7 +47,7 @@ class ReturnModel {
 
 			await connection.query(`INSERT INTO journal_items SET ?`, firstItem);
 
-			let [_7011] = await Accounts.getIdByAccountNumber("7011");
+			let [_7011] = await Accounts.getIdByAccountNumber("7011", connection);
 			const secondItem = {
 				journal_id_fk: journal_voucher.insertId,
 				journal_date: order.order_datetime,
@@ -127,7 +127,7 @@ class ReturnModel {
 					payment.amount,
 				]);
 
-				let [_531] = await Accounts.getIdByAccountNumber("531");
+				let [_531] = await Accounts.getIdByAccountNumber("531", connection);
 
 				const firstItem = {
 					journal_id_fk: journal_voucher.insertId,
@@ -144,7 +144,7 @@ class ReturnModel {
 
 				await connection.query(`INSERT INTO journal_items SET ?`, firstItem);
 
-				let [_413] = await Accounts.getIdByAccountNumber("413");
+				let [_413] = await Accounts.getIdByAccountNumber("413", connection);
 				const secondItem = {
 					journal_id_fk: journal_voucher.insertId,
 					journal_date: payment.payment_date,
@@ -241,7 +241,7 @@ class ReturnModel {
 			]);
 			order.journal_voucher_id = journal_voucher.insertId;
 
-			let [_4111] = await Accounts.getIdByAccountNumber("4111");
+			let [_4111] = await Accounts.getIdByAccountNumber("4111", connection);
 
 			const firstItem = {
 				journal_id_fk: journal_voucher.insertId,
@@ -257,7 +257,7 @@ class ReturnModel {
 
 			await connection.query(`INSERT INTO journal_items SET ?`, firstItem);
 
-			let [_7011] = await Accounts.getIdByAccountNumber("7011");
+			let [_7011] = await Accounts.getIdByAccountNumber("7011", connection);
 			const secondItem = {
 				journal_id_fk: journal_voucher.insertId,
 				journal_date: order.order_datetime,

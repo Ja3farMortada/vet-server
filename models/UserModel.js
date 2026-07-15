@@ -47,7 +47,10 @@ class User {
 
         if (!rows) return null;
 
-        const verified = bcrypt.compareSync(password, rows.password);
+        // async bcrypt keeps the CPU-bound hash OFF the event loop (bcryptjs sync
+        // form freezes the single thread ~80-120ms, stalling socket.io pings and
+        // all other requests during login bursts).
+        const verified = await bcrypt.compare(password, rows.password);
         if (verified) {
             const beirutTime = moment()
                 .tz("Asia/Beirut")
@@ -72,7 +75,7 @@ class User {
 
     // create user
     static async create(user) {
-        user.password = bcrypt.hashSync(user.password, 10);
+        user.password = await bcrypt.hash(user.password, 10);
         const [rows] = await pool.query(`INSERT INTO users SET ?`, user);
         return rows;
     }
@@ -87,7 +90,7 @@ class User {
 
     // update password
     static async updatePassword(user_id, password) {
-        const hashed_password = bcrypt.hashSync(password, 10);
+        const hashed_password = await bcrypt.hash(password, 10);
         await pool.query(`UPDATE users SET password = ? WHERE user_id = ?`, [
             hashed_password,
             user_id,

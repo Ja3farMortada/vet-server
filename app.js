@@ -1,6 +1,9 @@
 require("dotenv").config();
 const express = require("express");
 const app = express();
+// Behind a reverse proxy (nginx): trust it so req.ip / X-Forwarded-* reflect the
+// real client — needed for correct rate limiting, logging and 504 diagnosis.
+app.set("trust proxy", 1);
 app.use(express.json());
 const path = require("path");
 const http = require("http");
@@ -16,8 +19,21 @@ const errorHandler = require("./middleware/errorHandler");
 const server = http.createServer(app);
 const socketIO = require("socket.io");
 const io = socketIO(server, {
+    // socket.io v4 uses `origin` (singular). The old `origins` key is the v2
+    // spelling and is silently ignored, so CORS was effectively unconfigured.
     cors: {
-        origins: ["*"],
+        origin: "*",
+        methods: ["GET", "POST"],
+    },
+    // Prefer websocket but keep polling as fallback.
+    transports: ["websocket", "polling"],
+    pingInterval: 25000,
+    pingTimeout: 20000,
+    maxHttpBufferSize: 1e6,
+    // Let a briefly-disconnected client resume instead of doing a full
+    // reconnect handshake — cuts the reconnect churn that piles onto the app.
+    connectionStateRecovery: {
+        maxDisconnectionDuration: 2 * 60 * 1000,
     },
 });
 app.use((req, res, next) => {
@@ -83,5 +99,13 @@ app.get("/", (req, res) => {
 
 // handle errors
 app.use(errorHandler);
+
+// Node's default keepAliveTimeout is 5s. If the reverse proxy keeps upstream
+// connections alive longer, Node reaps an idle socket the proxy still thinks is
+// open → the next request races onto a half-closed socket → the proxy reports
+// 502/504 with NO error in the Node logs. Keep these ABOVE the proxy's upstream
+// keepalive (nginx default 60s), and headersTimeout above keepAliveTimeout.
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
 
 server.listen(3000, () => console.log(`listening on port 3000 ...`));
