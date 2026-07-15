@@ -11,6 +11,17 @@ exports.fetchSalesHistory = async (req, res, next) => {
 	}
 };
 
+// sales order line items (lazy detail load for preview / edit / print)
+exports.fetchOrderItemsById = async (req, res, next) => {
+	try {
+		const ids = req.body;
+		const items = await History.fetchOrderItemsById(ids);
+		res.status(200).send(items);
+	} catch (error) {
+		next(error);
+	}
+};
+
 // edits history
 exports.fetchEditHistory = async (req, res, next) => {
 	try {

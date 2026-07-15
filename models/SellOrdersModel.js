@@ -429,7 +429,10 @@ class SellOrders {
             );
 
             order.exchange_rate = orderCheck.exchange_rate;
-            order.pet_id = orderCheck.pet_id;
+            // honour the pet chosen in the edit dialog; fall back to the
+            // original pet only when the client didn't send one.
+            order.pet_id =
+                order.pet_id !== undefined ? order.pet_id : orderCheck.pet_id;
 
             // insert query
             await connection.query(`INSERT INTO sales_orders SET ?`, order);

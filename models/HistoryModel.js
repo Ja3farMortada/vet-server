@@ -5,21 +5,20 @@ moment.tz.setDefault("Asia/Beirut");
 class History {
     // fetch sales invoices
     static async fetchSalesHistory(criteria) {
+        // NOTE: line items are intentionally NOT fetched here — the list only
+        // needs invoice-level fields. Items are pulled lazily per invoice via
+        // fetchOrderItemsById() when a detail/edit/print/whatsapp action runs.
         let sql = `SELECT
             A.name AS customer_name,
             A.phone AS customer_phone,
             A.address AS customer_address,
             O.*,
             O.order_datetime AS order_date,
-			P.pet_id,
-			P.pet_name,
-            JSON_ARRAYAGG(JSON_OBJECT('order_item_id', M.order_item_id, 'product_id', M.product_id, 'product_name', S.product_name, 'variant_id', M.variant_id, 'expiry_date', V.expiry_date, 'barcode', S.barcode, 'quantity', M.quantity, 'price_type', M.price_type, 'original_price', M.original_price, 'discount_percentage', M.discount_percentage, 'unit_cost', M.unit_cost, 'unit_price', M.unit_price, 'total_price', M.total_price)) items
+            P.pet_id,
+            P.pet_name
             FROM sales_orders O
-            LEFT JOIN sales_order_items M ON O.order_id = M.order_id
-            INNER JOIN products S ON S.product_id = M.product_id
-			LEFT JOIN products_variants V ON M.variant_id = V.variant_id
-            LEFT JOIN accounts  A ON O.customer_id = A.account_id
-			LEFT JOIN pets P ON P.pet_id = O.pet_id
+            LEFT JOIN accounts A ON O.customer_id = A.account_id
+            LEFT JOIN pets P ON P.pet_id = O.pet_id
             WHERE O.is_deleted = 0`;
         const params = [];
         if (criteria.invoice_number) {
@@ -40,10 +39,35 @@ class History {
         }
 
         const limit = params.length > 0 ? 1000 : 100;
-        sql += ` GROUP BY O.order_id
-        ORDER BY order_date DESC, O.invoice_number DESC LIMIT ${limit}`;
+        sql += ` ORDER BY order_date DESC, O.invoice_number DESC LIMIT ${limit}`;
 
         const [rows] = await pool.query(sql, params);
+        return rows;
+    }
+
+    // fetch the line items for one or more sales orders (lazy detail load)
+    static async fetchOrderItemsById(ids) {
+        const query = `SELECT
+            M.order_item_id,
+            M.product_id,
+            S.product_name,
+            M.variant_id,
+            V.expiry_date,
+            S.barcode,
+            S.stock_management,
+            M.quantity,
+            M.price_type,
+            M.original_price,
+            M.discount_percentage,
+            M.unit_cost,
+            M.unit_price,
+            M.total_price
+            FROM sales_order_items M
+            INNER JOIN products S ON S.product_id = M.product_id
+            LEFT JOIN products_variants V ON M.variant_id = V.variant_id
+            WHERE IFNULL(M.is_deleted, 0) = 0
+            AND M.order_id IN (?)`;
+        const [rows] = await pool.query(query, [ids]);
         return rows;
     }
 
