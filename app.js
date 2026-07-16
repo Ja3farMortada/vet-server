@@ -73,6 +73,7 @@ app.use("/payment", auth, PaymentRoutes);
 app.use("/balance", auth, BalanceRoutes);
 app.use("/expense", auth, ExpenseRoutes);
 app.use("/report", auth, ReportRoutes);
+app.use("/reports/v2", auth, require("./routes/reports-v2.routes"));
 app.use("/return", auth, ReturnRoutes);
 app.use("/suppliers", auth, SuppliersRoutes);
 app.use("/stock", auth, StockRoutes);

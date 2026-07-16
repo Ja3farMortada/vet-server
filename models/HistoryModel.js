@@ -187,41 +187,68 @@ class History {
         return rows;
     }
 
-    //fetch return history
-    static async fetchReturnHistory(criteria) {
+    // fetch return history
+    // Line items are NOT aggregated here — they load lazily per return via
+    // fetchReturnOrderItemsById(), same as the sales list. LEFT JOIN on accounts
+    // because a return may have no customer (walk-in refund).
+    static async fetchReturnHistory(criteria = {}) {
+        criteria = criteria || {};
         let sql = `SELECT
                 A.name AS customer_name,
                 A.phone AS customer_phone,
                 A.address AS customer_address,
                 RO.*,
-                DATE(RO.order_datetime) AS order_date,
-                JSON_ARRAYAGG(JSON_OBJECT('order_item_id', M.order_item_id, 'product_id', M.product_id, 'product_name', S.product_name, 'quantity', M.quantity, 'price_type', M.price_type,'unit_cost', M.unit_cost, 'unit_price', M.unit_price, 'total_price', M.total_price)) items
+                RO.order_datetime AS order_date
             FROM return_orders RO
-            INNER JOIN return_order_items M ON RO.order_id = M.order_id
-            INNER JOIN products S ON S.product_id = M.product_id
-            INNER JOIN accounts  A ON RO.customer_id = A.account_id
-            WHERE RO.is_deleted = 0 `;
+            LEFT JOIN accounts A ON RO.customer_id = A.account_id
+            WHERE RO.is_deleted = 0`;
         const params = [];
         if (criteria.invoice_number) {
-            sql += ` AND RO.invoice_number = ?`;
-            params.push(criteria.invoice_number);
+            sql += ` AND RO.invoice_number LIKE ?`;
+            params.push(`%${criteria.invoice_number}`);
         }
         if (criteria.customer_id) {
             sql += ` AND RO.customer_id = ?`;
             params.push(criteria.customer_id);
         }
-        if (criteria.invoice_date) {
-            sql += ` AND DATE(order_datetime) = ?`;
-            params.push(moment(criteria.invoice_date).format("yyyy-MM-DD"));
+        if (criteria.start_date) {
+            sql += ` AND DATE(RO.order_datetime) >= ?`;
+            params.push(moment(criteria.start_date).format("yyyy-MM-DD"));
+        }
+        if (criteria.end_date) {
+            sql += ` AND DATE(RO.order_datetime) <= ?`;
+            params.push(moment(criteria.end_date).format("yyyy-MM-DD"));
         }
 
-        sql += ` GROUP BY RO.order_id
-        ORDER BY order_date DESC, RO.invoice_number DESC
-        LIMIT ? OFFSET ?`;
-        params.push(criteria.limit || 100);
-        params.push(criteria.offset || 0);
+        const limit = params.length > 0 ? 1000 : 100;
+        sql += ` ORDER BY order_date DESC, RO.invoice_number DESC LIMIT ${limit}`;
 
         const [rows] = await pool.query(sql, params);
+        return rows;
+    }
+
+    // fetch the line items for one or more returns (lazy detail load)
+    static async fetchReturnOrderItemsById(ids) {
+        const query = `SELECT
+            M.order_item_id,
+            M.order_id,
+            M.product_id,
+            S.product_name,
+            M.variant_id,
+            V.expiry_date,
+            S.barcode,
+            S.stock_management,
+            M.quantity,
+            M.price_type,
+            M.unit_cost,
+            M.unit_price,
+            M.total_price
+            FROM return_order_items M
+            INNER JOIN products S ON S.product_id = M.product_id
+            LEFT JOIN products_variants V ON M.variant_id = V.variant_id
+            WHERE IFNULL(M.is_deleted, 0) = 0
+            AND M.order_id IN (?)`;
+        const [rows] = await pool.query(query, [ids]);
         return rows;
     }
 

@@ -22,6 +22,17 @@ exports.fetchOrderItemsById = async (req, res, next) => {
 	}
 };
 
+// return order line items (lazy detail load for preview / edit)
+exports.fetchReturnOrderItemsById = async (req, res, next) => {
+	try {
+		const ids = req.body;
+		const items = await History.fetchReturnOrderItemsById(ids);
+		res.status(200).send(items);
+	} catch (error) {
+		next(error);
+	}
+};
+
 // edits history
 exports.fetchEditHistory = async (req, res, next) => {
 	try {

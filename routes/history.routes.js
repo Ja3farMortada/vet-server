@@ -13,6 +13,7 @@ router.post(
 	HistoryController.fetchUserMoneyTransferHistory
 );
 router.post("/return/search", HistoryController.fetchReturnHistory);
+router.post("/return/details", HistoryController.fetchReturnOrderItemsById);
 router.post("/purchase/search", HistoryController.fetchPurchaseHistory);
 router.post("/receipt/search", HistoryController.fetchReceiptHistory);
 

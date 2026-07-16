@@ -1,42 +1,46 @@
 const ReturnModel = require("../models/ReturnModel");
 
+// create a return — body: { invoice: { ...order, items: [...] }, payment: {...}|null }
 exports.addReturn = async (req, res, next) => {
-	const user_id = req.user.user_id;
-	const order = req.body.invoice;
-	const payment = req.body.payment;
-	const items = order.items;
-	delete order.items;
+    try {
+        const order = req.body.invoice;
+        const payment = req.body.payment || null;
+        const items = order.items || [];
+        delete order.items;
 
-	try {
-		const result = await ReturnModel.addReturn(user_id, order, items, payment);
-		res.status(201).json(result);
-	} catch (error) {
-		next(error);
-	}
+        const { order_id } = await ReturnModel.createReturn(order, items, payment);
+        const created = await ReturnModel.getReturnById(order_id);
+        res.status(201).json(created);
+    } catch (error) {
+        next(error);
+    }
 };
 
+// edit a return — body: the order incl. items + update_reason
 exports.editReturn = async (req, res, next) => {
-	const order = req.body;
-	const items = order.items;
-	delete order.items;
-	const user_id = req.user.user_id;
+    try {
+        const order = req.body;
+        const order_id = order.order_id;
+        const items = order.items || [];
+        delete order.items;
+        delete order.order_id;
 
-	try {
-		const result = await ReturnModel.editReturn(user_id, order, items);
-		res.status(200).json(result);
-	} catch (error) {
-		next(error);
-	}
+        await ReturnModel.updateReturn(order_id, order, items);
+        const updated = await ReturnModel.getReturnById(order_id);
+        res.status(200).json(updated);
+    } catch (error) {
+        next(error);
+    }
 };
 
+// soft-delete a return — DELETE /return/:order_id?message=reason
 exports.deleteReturn = async (req, res, next) => {
-	const user_id = req.user.user_id;
-	const order_id = req.params.order_id;
-
-	try {
-		await ReturnModel.deleteReturn(user_id, order_id);
-		res.status(200).json({ message: "Order deleted successfully" });
-	} catch (error) {
-		next(error);
-	}
+    try {
+        const { order_id } = req.params;
+        const { message } = req.query;
+        await ReturnModel.deleteReturn(order_id, message);
+        res.status(200).json({ message: "Return deleted successfully" });
+    } catch (error) {
+        next(error);
+    }
 };
