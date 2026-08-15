@@ -23,4 +23,5 @@ exports.getProductsInsights = handler("getProductsInsights");
 exports.getProductHistory = handler("getProductHistory");
 exports.getDiscounts = handler("getDiscounts");
 exports.getHeatmap = handler("getHeatmap");
+exports.getBalanceSheet = handler("getBalanceSheet");
 exports.getInventory = handler("getInventory", false);

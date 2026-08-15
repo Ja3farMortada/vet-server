@@ -798,6 +798,405 @@ class ReportsV2Model {
         };
     }
 
+    // ───────────────────────── Balance Sheet ─────────────────────────────
+    //
+    // A balance sheet is a POINT IN TIME (everything up to the `to` date), while
+    // the P&L is a PERIOD (from..to). Both come from this one endpoint.
+    //
+    // Two things make this business's books unusual, and the sheet handles both
+    // explicitly rather than hiding them:
+    //
+    //  1. Deleted vouchers. journal_items rows survive when their voucher is
+    //     soft-deleted, so EVERY ledger read must join journal_vouchers and
+    //     filter jv.is_deleted = 0. Without it cash reads −$3,066 instead of
+    //     $932.94 and expenses are overstated by ~$4k.
+    //
+    //  2. Stock is not in the ledger. Purchases are expensed straight to
+    //     "6011 Goods", so unsold stock appears nowhere as an asset. We add it
+    //     from the inventory tables and post the identical amount into equity
+    //     ("value of unsold stock"), which keeps Assets = Liabilities + Equity
+    //     exact while showing what the business is really worth.
+    //
+    // Account roles (French PCG chart):
+    //   531  cash · 4111+413 customer receivables · 4011+401 supplier payables
+    //   44271 VAT owed · 101 owner capital · 7011 sales · 6011/6112 expenses
+
+    /** Ledger balances (debit − credit) as of a moment, voucher-aware. */
+    static async #ledgerAsOf(endExclusive) {
+        const [rows] = await pool.query(
+            `SELECT coa.account_number, coa.english_name, coa.account_type,
+                COALESCE(SUM(ji.debit) - SUM(ji.credit), 0) AS balance,
+                COALESCE(SUM(ji.debit), 0) AS debit,
+                COALESCE(SUM(ji.credit), 0) AS credit
+             FROM journal_items ji
+             INNER JOIN journal_vouchers jv ON jv.journal_id = ji.journal_id_fk
+             INNER JOIN chart_of_accounts coa ON coa.id = ji.account_id_fk
+             WHERE ji.is_deleted = 0 AND jv.is_deleted = 0
+               AND ji.journal_date < ?
+             GROUP BY coa.id`,
+            [endExclusive],
+        );
+        const byNumber = new Map(
+            rows.map((r) => [
+                r.account_number,
+                {
+                    account_number: r.account_number,
+                    name: (r.english_name || "").trim(),
+                    account_type: r.account_type,
+                    balance: round2(r.balance),
+                    debit: round2(r.debit),
+                    credit: round2(r.credit),
+                },
+            ]),
+        );
+        const bal = (...numbers) =>
+            numbers.reduce((sum, n) => sum + num(byNumber.get(n)?.balance), 0);
+        return { rows: [...byNumber.values()], byNumber, bal };
+    }
+
+    /**
+     * The ONE cost basis for valuing stock on hand: weighted average cost,
+     * falling back to the product's unit cost when no average exists yet.
+     *
+     * Must be identical everywhere stock is valued (balance sheet headline,
+     * net-worth trend, inventory page) or those pages disagree — which they did:
+     * the balance sheet used raw unit_cost_usd (the LATEST purchase price) and
+     * read $362.40 higher than the inventory page.
+     */
+    static #STOCK_COST = `COALESCE(P.avg_cost_usd, P.unit_cost_usd, 0)`;
+
+    /** Stock on hand at cost as of a moment (movements before endExclusive). */
+    static async #stockAsOf(endExclusive) {
+        const [[row]] = await pool.query(
+            `SELECT
+                COALESCE(SUM(t.qty * ${this.#STOCK_COST}), 0) AS cost_value,
+                COALESCE(SUM(t.qty * P.unit_price_usd), 0) AS retail_value,
+                COALESCE(SUM(t.qty), 0) AS units,
+                COUNT(*) AS sku_count
+             FROM products P
+             INNER JOIN (
+                SELECT product_id_fk, SUM(quantity) AS qty
+                FROM inventory_transactions
+                WHERE transaction_datetime < ?
+                GROUP BY product_id_fk
+             ) t ON t.product_id_fk = P.product_id
+             WHERE P.is_deleted = 0 AND t.qty > 0`,
+            [endExclusive],
+        );
+        return {
+            cost_value: round2(row.cost_value),
+            retail_value: round2(row.retail_value),
+            units: round2(row.units),
+            sku_count: num(row.sku_count),
+        };
+    }
+
+    /**
+     * Net worth at the END of every month of `year` (never past today).
+     *
+     * Net worth = Assets − Liabilities, which is exactly Total Equity: the
+     * ledger balances and stock is added to both sides, so the two definitions
+     * agree to the cent.
+     *
+     * Built from monthly DELTAS accumulated in JS rather than 12 separate
+     * point-in-time queries — two grouped scans instead of ~24, so the whole
+     * trend costs about as much as one snapshot.
+     */
+    static async #netWorthTrend(year) {
+        const yearStart = moment(`${year}-01-01`).startOf("year");
+        const yearEnd = moment(yearStart).add(1, "year");
+        const today = moment().endOf("day");
+        // don't project into the future
+        const lastMonth = Math.min(
+            11,
+            today.isBefore(yearEnd) ? today.month() : 11,
+        );
+        if (today.isBefore(yearStart)) return [];
+
+        const cutoff = moment
+            .min(yearEnd, moment(today).add(1, "day"))
+            .format("YYYY-MM-DD HH:mm:ss");
+
+        // 1. ledger deltas per month per account, from the very beginning
+        const [ledgerRows] = await pool.query(
+            `SELECT DATE_FORMAT(ji.journal_date, '%Y-%m') AS ym,
+                coa.account_number AS acct,
+                COALESCE(SUM(ji.debit) - SUM(ji.credit), 0) AS delta
+             FROM journal_items ji
+             INNER JOIN journal_vouchers jv ON jv.journal_id = ji.journal_id_fk
+             INNER JOIN chart_of_accounts coa ON coa.id = ji.account_id_fk
+             WHERE ji.is_deleted = 0 AND jv.is_deleted = 0
+               AND ji.journal_date < ?
+             GROUP BY ym, coa.id`,
+            [cutoff],
+        );
+
+        // 2. stock movement per month per product (qty only — cost applied later)
+        const [stockRows] = await pool.query(
+            `SELECT DATE_FORMAT(t.transaction_datetime, '%Y-%m') AS ym,
+                t.product_id_fk AS pid,
+                COALESCE(SUM(t.quantity), 0) AS delta
+             FROM inventory_transactions t
+             INNER JOIN products P ON P.product_id = t.product_id_fk
+             WHERE P.is_deleted = 0 AND t.transaction_datetime < ?
+             GROUP BY ym, t.product_id_fk`,
+            [cutoff],
+        );
+        const [costRows] = await pool.query(
+            `SELECT P.product_id, ${this.#STOCK_COST} AS cost
+             FROM products P WHERE P.is_deleted = 0`,
+        );
+        const costOf = new Map(costRows.map((r) => [r.product_id, num(r.cost)]));
+
+        // group deltas by month key for accumulation
+        const ledgerByMonth = new Map();
+        for (const r of ledgerRows) {
+            if (!ledgerByMonth.has(r.ym)) ledgerByMonth.set(r.ym, []);
+            ledgerByMonth.get(r.ym).push([r.acct, num(r.delta)]);
+        }
+        const stockByMonth = new Map();
+        for (const r of stockRows) {
+            if (!stockByMonth.has(r.ym)) stockByMonth.set(r.ym, []);
+            stockByMonth.get(r.ym).push([r.pid, num(r.delta)]);
+        }
+
+        const acctBal = new Map();
+        const productQty = new Map();
+
+        const apply = (ym) => {
+            for (const [acct, delta] of ledgerByMonth.get(ym) ?? []) {
+                acctBal.set(acct, (acctBal.get(acct) ?? 0) + delta);
+            }
+            for (const [pid, delta] of stockByMonth.get(ym) ?? []) {
+                productQty.set(pid, (productQty.get(pid) ?? 0) + delta);
+            }
+        };
+        const bal = (...ns) =>
+            ns.reduce((sum, n) => sum + (acctBal.get(n) ?? 0), 0);
+        const stockValue = () => {
+            let total = 0;
+            for (const [pid, qty] of productQty) {
+                // mirrors the headline figure, which ignores negative stock
+                if (qty > 0) total += qty * (costOf.get(pid) ?? 0);
+            }
+            return total;
+        };
+
+        // 1. roll everything BEFORE the year into the opening position
+        const allMonths = [
+            ...new Set([...ledgerByMonth.keys(), ...stockByMonth.keys()]),
+        ].sort();
+        for (const ym of allMonths) {
+            if (ym < `${year}-01`) apply(ym);
+        }
+
+        // 2. walk Jan..lastMonth, snapshotting at each month end. A month with
+        //    no movement simply repeats the previous balances — no special case.
+        const points = [];
+        for (let m = 0; m <= lastMonth; m++) {
+            const ym = `${year}-${String(m + 1).padStart(2, "0")}`;
+            apply(ym);
+            points.push(this.#snapshotPoint(ym, bal, stockValue()));
+        }
+        return points;
+    }
+
+    static #snapshotPoint(ym, bal, stock) {
+        const cash = bal("531");
+        const receivables = bal("4111", "413");
+        const assets = cash + receivables + stock;
+        const liabilities = -bal("4011", "401") - bal("44271");
+        return {
+            month: ym,
+            cash: round2(cash),
+            receivables: round2(receivables),
+            stock: round2(stock),
+            assets: round2(assets),
+            liabilities: round2(liabilities),
+            net_worth: round2(assets - liabilities),
+        };
+    }
+
+    static async getBalanceSheet({ from, to, year }) {
+        const { start, endExclusive } = this.#bounds(from, to);
+
+        // The trend is a calendar-year view, independent of the range above:
+        // defaults to the year the range ends in, overridable by the picker.
+        const trendYear = Number(year) || moment(to).year();
+
+        const [
+            ledger,
+            stock,
+            periodKpis,
+            periodLedger,
+            openingLedger,
+            net_worth_trend,
+            yearsRow,
+        ] = await Promise.all([
+                this.#ledgerAsOf(endExclusive), // cumulative → balance sheet
+                this.#stockAsOf(endExclusive),
+                this.#kpis(start, endExclusive), // operational P&L
+                // books P&L for the period only
+                pool.query(
+                    `SELECT coa.account_number,
+                        COALESCE(SUM(ji.debit) - SUM(ji.credit), 0) AS balance
+                     FROM journal_items ji
+                     INNER JOIN journal_vouchers jv ON jv.journal_id = ji.journal_id_fk
+                     INNER JOIN chart_of_accounts coa ON coa.id = ji.account_id_fk
+                     WHERE ji.is_deleted = 0 AND jv.is_deleted = 0
+                       AND ji.journal_date >= ? AND ji.journal_date < ?
+                     GROUP BY coa.id`,
+                    [start, endExclusive],
+                ),
+                this.#ledgerAsOf(start), // for the "since last period" delta
+                this.#netWorthTrend(trendYear),
+                // years the business has data for, for the picker
+                pool.query(
+                    `SELECT MIN(y) AS first_year, MAX(y) AS last_year FROM (
+                        SELECT YEAR(MIN(order_datetime)) y FROM sales_orders WHERE is_deleted = 0
+                        UNION ALL
+                        SELECT YEAR(MAX(order_datetime)) y FROM sales_orders WHERE is_deleted = 0
+                     ) t`,
+                ),
+            ]);
+
+        const firstYear =
+            num(yearsRow[0]?.[0]?.first_year) || moment().year();
+        const lastYear = Math.max(
+            num(yearsRow[0]?.[0]?.last_year) || moment().year(),
+            moment().year(),
+        );
+        const available_years = [];
+        for (let y = lastYear; y >= firstYear; y--) available_years.push(y);
+
+        // ── assets ──────────────────────────────────────────────────────
+        const cash = round2(ledger.bal("531"));
+        const receivables = round2(ledger.bal("4111", "413"));
+        const stock_at_cost = stock.cost_value;
+        const assets_total = round2(cash + receivables + stock_at_cost);
+
+        // ── liabilities (credit-normal → flip the sign) ─────────────────
+        const payables = round2(-ledger.bal("4011", "401"));
+        const vat = round2(-ledger.bal("44271"));
+        const liabilities_total = round2(payables + vat);
+
+        // ── equity ──────────────────────────────────────────────────────
+        // 101 is credit-normal: a debit balance means the owner has taken out
+        // more than they put in, so owner_capital goes negative — correct, and
+        // shown alongside the gross in/out so it is never mysterious.
+        const capitalAccount = ledger.byNumber.get("101");
+        const owner_capital = round2(-ledger.bal("101"));
+        const owner_put_in = round2(capitalAccount?.credit ?? 0);
+        const owner_took_out = round2(capitalAccount?.debit ?? 0);
+
+        // Retained earnings straight from the books: income − expenses to date.
+        const income_to_date = round2(-ledger.bal("7011"));
+        const expenses_to_date = round2(ledger.bal("6011", "6112"));
+        const retained_earnings = round2(income_to_date - expenses_to_date);
+
+        // The books expensed stock that is still on the shelf; adding it back is
+        // what makes the sheet balance once stock is counted as an asset.
+        const stock_adjustment = stock_at_cost;
+        const equity_total = round2(
+            owner_capital + retained_earnings + stock_adjustment,
+        );
+
+        // ── P&L, both bases (they differ by stock timing) ────────────────
+        const periodByNumber = new Map(
+            periodLedger[0].map((r) => [r.account_number, num(r.balance)]),
+        );
+        const pBal = (...ns) =>
+            ns.reduce((sum, n) => sum + (periodByNumber.get(n) ?? 0), 0);
+
+        const books_sales = round2(-pBal("7011"));
+        const books_goods = round2(pBal("6011"));
+        const books_expenses = round2(pBal("6112"));
+        const books_net = round2(books_sales - books_goods - books_expenses);
+
+        // Sales in this period that never reached the ledger. The accounting
+        // system went live 2024-10-03, ~1 month after the first sale, and only
+        // fully covered every sale from Feb 2025 — so 614 real early sales
+        // ($18,315) exist as orders but not as journal entries. Reporting the
+        // figure per-period (instead of hardcoding a date) means the caveat
+        // shows only when it applies, and disappears by itself if the history
+        // is ever backfilled.
+        const [[unrecorded]] = await pool.query(
+            `SELECT COUNT(*) AS orders, COALESCE(SUM(total_amount), 0) AS revenue
+             FROM sales_orders
+             WHERE is_deleted = 0 AND journal_voucher_id IS NULL
+               AND order_datetime >= ? AND order_datetime < ?`,
+            [start, endExclusive],
+        );
+
+        // Operational basis = what the rest of Reports v2 shows.
+        const op_expenses = books_expenses;
+        const op_actual_profit = round2(periodKpis.net_profit - op_expenses);
+
+        return {
+            range: { from, to },
+            as_of: to,
+            assets: {
+                cash,
+                receivables,
+                stock_at_cost,
+                stock_at_retail: stock.retail_value,
+                stock_units: stock.units,
+                stock_skus: stock.sku_count,
+                total: assets_total,
+            },
+            liabilities: { payables, vat, total: liabilities_total },
+            equity: {
+                owner_capital,
+                owner_put_in,
+                owner_took_out,
+                retained_earnings,
+                stock_adjustment,
+                total: equity_total,
+            },
+            /** Assets = Liabilities + Equity. Always true; surfaced for trust. */
+            check: {
+                assets: assets_total,
+                liabilities_plus_equity: round2(liabilities_total + equity_total),
+                difference: round2(
+                    assets_total - (liabilities_total + equity_total),
+                ),
+                balanced:
+                    Math.abs(
+                        assets_total - (liabilities_total + equity_total),
+                    ) < 0.02,
+            },
+            pnl: {
+                operational: {
+                    revenue: periodKpis.sales_revenue,
+                    returns: periodKpis.total_returns,
+                    net_sales: periodKpis.net_sales,
+                    gross_profit: periodKpis.net_profit,
+                    expenses: op_expenses,
+                    net_profit: op_actual_profit,
+                },
+                books: {
+                    sales: books_sales,
+                    goods_purchased: books_goods,
+                    expenses: books_expenses,
+                    net_profit: books_net,
+                    /** real sales in this period that are missing from the ledger */
+                    unrecorded_orders: num(unrecorded.orders),
+                    unrecorded_revenue: round2(unrecorded.revenue),
+                },
+            },
+            /** Movement in net worth over the selected period. */
+            movement: {
+                cash_start: round2(openingLedger.bal("531")),
+                cash_end: cash,
+                cash_change: round2(cash - openingLedger.bal("531")),
+            },
+            /** month-by-month net worth for the picked calendar year */
+            trend_year: trendYear,
+            available_years,
+            net_worth_trend,
+        };
+    }
+
     static async getInventory({ moversDays = 30, deadDays = 90 } = {}) {
         const moversStart = moment()
             .subtract(Number(moversDays) || 30, 'days')
@@ -869,7 +1268,7 @@ class ReportsV2Model {
             `SELECT
                 COUNT(*) AS sku_count,
                 COALESCE(SUM(S.qty), 0) AS total_units,
-                COALESCE(SUM(S.qty * COALESCE(P.avg_cost_usd, P.unit_cost_usd, 0)), 0) AS cost_value,
+                COALESCE(SUM(S.qty * ${this.#STOCK_COST}), 0) AS cost_value,
                 COALESCE(SUM(S.qty * COALESCE(P.unit_price_usd, 0)), 0) AS retail_value
              FROM products P
              INNER JOIN (${stockCte}) S ON S.product_id_fk = P.product_id

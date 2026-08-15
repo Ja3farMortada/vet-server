@@ -13,6 +13,7 @@ router.post("/products/insights", ReportsV2Controller.getProductsInsights);
 router.post("/product-history", ReportsV2Controller.getProductHistory);
 router.post("/discounts", ReportsV2Controller.getDiscounts);
 router.post("/heatmap", ReportsV2Controller.getHeatmap);
+router.post("/balance-sheet", ReportsV2Controller.getBalanceSheet);
 router.post("/inventory", ReportsV2Controller.getInventory);
 
 module.exports = router;
