@@ -314,16 +314,25 @@ class ReportsV2Model {
         ]);
 
         const cogs_net = round2(num(facts.sales_cogs) - num(facts.returns_cogs));
+        const expenses = round2(facts.expenses);
         return {
             range: { from, to },
             kpis,
-            // Waterfall: Revenue − Returns = Net Sales − net COGS = Net Profit.
+            // Waterfall, top to bottom:
+            //   Revenue − Returns    = Net Sales
+            //   Net Sales − net COGS = Net Profit   (gross profit on goods)
+            //   Net Profit − Expenses = Actual Profit (what the business kept)
+            //
+            // Expenses are operating costs (EXP% vouchers) — NOT cost of goods,
+            // so they are deducted after gross profit, never mixed into COGS.
             waterfall: {
                 revenue: kpis.sales_revenue,
                 returns: kpis.total_returns,
                 net_sales: kpis.net_sales,
                 cogs: cogs_net,
                 net_profit: kpis.net_profit,
+                expenses,
+                actual_profit: round2(kpis.net_profit - expenses),
             },
             facts: {
                 expenses: round2(facts.expenses),
