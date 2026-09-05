@@ -81,9 +81,21 @@ class Payment {
         try {
             await connection.beginTransaction();
 
-            //insert to vouchers and journal_items
-            let query = `UPDATE journal_vouchers SET total_value = ?,  journal_notes = ? WHERE journal_id = ?`;
+            // The client sends the picked date as a JS Date, which serialises to
+            // an ISO-8601 UTC string ("2026-09-05T09:00:00.000Z"). MySQL rejects
+            // that for a DATETIME column under STRICT_TRANS_TABLES
+            // (ER_TRUNCATED_WRONG_VALUE 1292), so normalise it here exactly as
+            // the add path does.
+            moment.tz.setDefault("Asia/Beirut");
+            paymentData.payment_date = moment(paymentData.payment_date).format(
+                `YYYY-MM-DD HH:mm:ss`,
+            );
+
+            // The voucher date is the one payment history lists and filters on,
+            // so it has to move with the items or the edit looks ignored.
+            let query = `UPDATE journal_vouchers SET journal_date = ?, total_value = ?,  journal_notes = ? WHERE journal_id = ?`;
             const [journal_voucher] = await connection.query(query, [
+                paymentData.payment_date,
                 paymentData.amount,
                 paymentData.notes,
                 paymentData.journal_id,
