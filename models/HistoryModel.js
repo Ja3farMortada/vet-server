@@ -326,10 +326,7 @@ class History {
             params.push(moment(criteria.end_date).format("yyyy-MM-DD"));
         }
 
-        sql += ` ORDER BY payment_date DESC, P.journal_number DESC
-		LIMIT ? OFFSET ?`;
-        params.push(criteria.limit || 10000);
-        params.push(criteria.offset || 0);
+        sql += ` ORDER BY payment_date DESC, P.journal_number DESC`;
 
         const [rows] = await pool.query(sql, params);
         return rows;
