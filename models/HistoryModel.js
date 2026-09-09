@@ -180,7 +180,7 @@ class History {
 
         sql += ` ORDER BY payment_date DESC, P.journal_number DESC
 		LIMIT ? OFFSET ?`;
-        params.push(criteria.limit || 100);
+        params.push(criteria.limit || 10000);
         params.push(criteria.offset || 0);
 
         const [rows] = await pool.query(sql, params);
@@ -220,7 +220,7 @@ class History {
             params.push(moment(criteria.end_date).format("yyyy-MM-DD"));
         }
 
-        const limit = params.length > 0 ? 1000 : 100;
+        const limit = params.length > 0 ? 10000 : 1000;
         sql += ` ORDER BY order_date DESC, RO.invoice_number DESC LIMIT ${limit}`;
 
         const [rows] = await pool.query(sql, params);
@@ -288,7 +288,7 @@ class History {
         sql += ` GROUP BY PO.order_id
         ORDER BY order_date DESC, PO.invoice_number DESC
         LIMIT ? OFFSET ?`;
-        params.push(criteria.limit || 100);
+        params.push(criteria.limit || 1000);
         params.push(criteria.offset || 0);
 
         const [rows] = await pool.query(sql, params);
@@ -328,7 +328,7 @@ class History {
 
         sql += ` ORDER BY payment_date DESC, P.journal_number DESC
 		LIMIT ? OFFSET ?`;
-        params.push(criteria.limit || 100);
+        params.push(criteria.limit || 10000);
         params.push(criteria.offset || 0);
 
         const [rows] = await pool.query(sql, params);
